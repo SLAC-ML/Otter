@@ -85,7 +85,7 @@ services:
     # additional_dirs: []  # Add custom directories to copy if needed
 
   # Open WebUI - Primary user interface frontend
-  open_webui:
+  open-webui:
     path: ./services/open-webui
     hostname: localhost
     port_host: 8080
@@ -106,7 +106,7 @@ services:
 
 deployed_services:
   - jupyter
-  - open_webui
+  - open-webui
   - pipelines
 
 # ============================================================
