@@ -20,20 +20,10 @@ fi
 # Development mode override - install local framework AFTER everything else
 if [ "$DEV_MODE" = "true" ] && [ -d "/pipelines/framework_override" ]; then
     echo "🔧 Development mode: Overriding framework with local version..."
-    
-    # Create a temporary setup.py for the override
-    cat > /pipelines/framework_override/setup.py << 'EOF'
-from setuptools import setup, find_packages
-setup(
-    name="framework",
-    version="dev-override",
-    packages=find_packages(),
-    install_requires=[],  # Dependencies already installed from requirements.txt
-)
-EOF
-    
-    # Install the local framework (this will override the PyPI version)
-    pip install --no-cache-dir -e /pipelines/framework_override
+
+    # Install the local framework (modern pip handles pyproject.toml automatically)
+    # Force reinstall to override the PyPI version
+    pip install --no-cache-dir --force-reinstall --no-deps -e /pipelines/framework_override
     echo "✓ Framework overridden with local development version"
 else
     echo "📦 Using PyPI framework version"
