@@ -172,8 +172,9 @@ class StanfordProviderAdapter(BaseProvider):
                 )
         except openai.BadRequestError as e:
             error_str = str(e).lower()
-            # Fall back to old API (max_tokens for older models)
-            if "max_tokens" in error_str or "unsupported parameter" in error_str:
+            # Fall back to old API (max_tokens for older/proxy models)
+            # Handles: direct OpenAI errors, LiteLLM/Azure routing errors
+            if "max_tokens" in error_str or "unsupported parameter" in error_str or "unrecognized request argument" in error_str:
                 if output_format is not None:
                     response = client.beta.chat.completions.parse(
                         model=model_id,
@@ -250,8 +251,9 @@ class StanfordProviderAdapter(BaseProvider):
                 )
             except openai.BadRequestError as e:
                 error_str = str(e).lower()
-                # Fall back to old API (max_tokens for older models)
-                if "max_tokens" in error_str or "unsupported parameter" in error_str:
+                # Fall back to old API (max_tokens for older/proxy models)
+                # Handles: direct OpenAI errors, LiteLLM/Azure routing errors
+                if "max_tokens" in error_str or "unsupported parameter" in error_str or "unrecognized request argument" in error_str:
                     response = client.chat.completions.create(
                         model=test_model,
                         messages=[{"role": "user", "content": "Hi"}],
