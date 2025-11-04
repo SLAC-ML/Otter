@@ -13,7 +13,11 @@ services:
     environment:
       # Timezone synchronization with host (from system configuration)
       - TZ={{system.timezone}}
+{% if api.providers.ollama is defined %}
       - OLLAMA_BASE_URL={{api.providers.ollama.host}}:{{api.providers.ollama.port}}
+{% else %}
+      - OLLAMA_BASE_URL=http://localhost:11434
+{% endif %}
       # Proxy settings (optional - uncomment if behind corporate firewall)
       # - NO_PROXY=${NO_PROXY}
       - WEBUI_CUSTOM_CSS_URL=/static/custom.css
