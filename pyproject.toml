@@ -1,0 +1,35 @@
+[project]
+name = "otter"
+version = "0.1.0"
+description = "otter - Alpha Berkeley Agent Application"
+requires-python = ">=3.11"
+
+dependencies = [
+    # Framework dependency
+    "alpha-berkeley-framework>=0.7.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "black",
+    "ruff",
+]
+
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["otter*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
