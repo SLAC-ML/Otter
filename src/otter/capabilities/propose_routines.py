@@ -15,8 +15,11 @@ from framework.base.decorators import capability_node
 from framework.base.capability import BaseCapability
 from framework.base.errors import ErrorClassification, ErrorSeverity
 from framework.base.examples import (
-    OrchestratorGuide, OrchestratorExample,
-    TaskClassifierGuide, ClassifierExample, ClassifierActions
+    OrchestratorGuide,
+    OrchestratorExample,
+    TaskClassifierGuide,
+    ClassifierExample,
+    ClassifierActions,
 )
 from framework.base.planning import PlannedStep
 from framework.state import AgentState, StateManager
@@ -33,19 +36,23 @@ registry = get_registry()
 # Custom Exceptions
 # ====================
 
+
 class ProposeRoutinesError(Exception):
     """Base class for propose routines errors."""
+
     pass
 
 
 class InsufficientContextError(ProposeRoutinesError):
     """Raised when not enough context provided for proposal generation."""
+
     pass
 
 
 # ====================
 # Capability Definition
 # ====================
+
 
 @capability_node
 class ProposeRoutinesCapability(BaseCapability):
@@ -90,8 +97,7 @@ class ProposeRoutinesCapability(BaseCapability):
                 if "RUN_ANALYSIS" in input_item:
                     analysis_key = input_item["RUN_ANALYSIS"]
                     analysis_context = context_manager.get_context(
-                        registry.context_types.RUN_ANALYSIS,
-                        analysis_key
+                        registry.context_types.RUN_ANALYSIS, analysis_key
                     )
                     break
 
@@ -127,9 +133,7 @@ class ProposeRoutinesCapability(BaseCapability):
             objective_list = [
                 {name: data.get("direction", "MAXIMIZE")}
                 for name, data in sorted(
-                    objective_analysis.items(),
-                    key=lambda x: x[1].get("num_runs", 0),
-                    reverse=True
+                    objective_analysis.items(), key=lambda x: x[1].get("num_runs", 0), reverse=True
                 )
             ]
 
@@ -155,12 +159,12 @@ class ProposeRoutinesCapability(BaseCapability):
                     "beamline": best_beamline,
                     "badger_environment": best_env,
                     "estimated_evaluations": int(avg_evaluations),
-                    "objectives": objective_list[:min(2, len(objective_list))],
+                    "objectives": objective_list[: min(2, len(objective_list))],
                     "variables": [],  # Note: Variables not available in aggregate analysis
                     "justification": f"Based on analysis of {best_algo_count} top-performing runs using {best_algo}. "
-                                   f"This algorithm showed best performance across {total_runs} analyzed runs.",
+                    f"This algorithm showed best performance across {total_runs} analyzed runs.",
                     "confidence": "high" if best_algo_count >= 3 else "medium",
-                    "reference_runs": reference_runs[:3]
+                    "reference_runs": reference_runs[:3],
                 }
                 proposals.append(proposal_1)
 
@@ -172,17 +176,18 @@ class ProposeRoutinesCapability(BaseCapability):
                 proposal_2 = {
                     "proposal_name": "Conservative Alternative",
                     "algorithm": second_algo,
-                    "beamline": target_beamline or (
-                        beamline_counts.most_common(1)[0][0] if beamline_counts else "cu_hxr"
+                    "beamline": target_beamline
+                    or (beamline_counts.most_common(1)[0][0] if beamline_counts else "cu_hxr"),
+                    "badger_environment": (
+                        badger_env_counts.most_common(1)[0][0] if badger_env_counts else "lcls"
                     ),
-                    "badger_environment": badger_env_counts.most_common(1)[0][0] if badger_env_counts else "lcls",
                     "estimated_evaluations": int(avg_evaluations * 0.8),
-                    "objectives": objective_list[:min(2, len(objective_list))],
+                    "objectives": objective_list[: min(2, len(objective_list))],
                     "variables": [],
                     "justification": f"Alternative using {second_algo}, proven in {second_algo_count} successful runs. "
-                                   f"Lower evaluation budget for faster results.",
+                    f"Lower evaluation budget for faster results.",
                     "confidence": "medium",
-                    "reference_runs": reference_runs[:2]
+                    "reference_runs": reference_runs[:2],
                 }
                 proposals.append(proposal_2)
 
@@ -195,17 +200,18 @@ class ProposeRoutinesCapability(BaseCapability):
                 proposal_3 = {
                     "proposal_name": "Exploration Configuration",
                     "algorithm": exploration_algo,
-                    "beamline": target_beamline or (
-                        beamline_counts.most_common(1)[0][0] if beamline_counts else "cu_hxr"
+                    "beamline": target_beamline
+                    or (beamline_counts.most_common(1)[0][0] if beamline_counts else "cu_hxr"),
+                    "badger_environment": (
+                        badger_env_counts.most_common(1)[0][0] if badger_env_counts else "lcls"
                     ),
-                    "badger_environment": badger_env_counts.most_common(1)[0][0] if badger_env_counts else "lcls",
                     "estimated_evaluations": int(avg_evaluations * 1.5),
-                    "objectives": objective_list[:min(3, len(objective_list))],
+                    "objectives": objective_list[: min(3, len(objective_list))],
                     "variables": [],
                     "justification": f"Exploration-focused configuration with extended evaluation budget ({int(avg_evaluations * 1.5)} evals). "
-                                   f"Based on successful patterns from analysis.",
+                    f"Based on successful patterns from analysis.",
                     "confidence": "medium",
-                    "reference_runs": reference_runs[:3]
+                    "reference_runs": reference_runs[:3],
                 }
                 proposals.append(proposal_3)
 
@@ -219,31 +225,28 @@ class ProposeRoutinesCapability(BaseCapability):
                     "target_beamline": target_beamline,
                     "target_objective": target_objective,
                     "algorithm_distribution": dict(algorithm_counts),
-                    "typical_evaluation_budget": int(avg_evaluations)
+                    "typical_evaluation_budget": int(avg_evaluations),
                 },
                 "usage_notes": [
                     "These proposals are based on pre-computed run analysis",
                     "Variables must be specified manually (not available in aggregate analysis)",
                     "Evaluation budgets are estimates from historical data",
                     "Confidence levels: high (3+ ref runs), medium (1-2 ref runs)",
-                    "Reference runs can be examined for detailed configurations"
-                ]
+                    "Reference runs can be examined for detailed configurations",
+                ],
             }
 
             streamer.status(f"Generated {len(proposals)} proposals!")
             logger.success(f"Successfully generated {len(proposals)} proposals from analysis")
 
             # Create and store context
-            from applications.otter.context_classes import RoutineProposalContext
+            from otter.context_classes import RoutineProposalContext
 
             proposal_context = RoutineProposalContext(proposal_data=result)
 
             context_key = step.get("context_key", "routine_proposals")
             return StateManager.store_context(
-                state,
-                registry.context_types.ROUTINE_PROPOSAL,
-                context_key,
-                proposal_context
+                state, registry.context_types.ROUTINE_PROPOSAL, context_key, proposal_context
             )
 
         except InsufficientContextError as e:
@@ -264,14 +267,14 @@ class ProposeRoutinesCapability(BaseCapability):
                 user_message=f"Cannot generate proposals: {str(exc)}",
                 metadata={
                     "technical_details": str(exc),
-                    "resolution": "Ensure RUN_ANALYSIS context is provided as input"
-                }
+                    "resolution": "Ensure RUN_ANALYSIS context is provided as input",
+                },
             )
         else:
             return ErrorClassification(
                 severity=ErrorSeverity.RETRIABLE,
                 user_message=f"Proposal generation error: {str(exc)}",
-                metadata={"technical_details": str(exc)}
+                metadata={"technical_details": str(exc)},
             )
 
     def _create_orchestrator_guide(self) -> Optional[OrchestratorGuide]:
@@ -285,14 +288,15 @@ class ProposeRoutinesCapability(BaseCapability):
                 expected_output="ROUTINE_PROPOSAL",
                 success_criteria="Proposals generated",
                 inputs=[{"RUN_ANALYSIS": "run_analysis"}],
-                parameters={"num_proposals": 3}
+                parameters={"num_proposals": 3},
             ),
             scenario_description="Generate proposals from analysis",
-            notes="Requires RUN_ANALYSIS context from analyze_runs step"
+            notes="Requires RUN_ANALYSIS context from analyze_runs step",
         )
 
         return OrchestratorGuide(
-            instructions=textwrap.dedent("""
+            instructions=textwrap.dedent(
+                """
                 **When to use propose_routines:**
                 - User asks for routine recommendations
                 - User wants algorithm/configuration suggestions
@@ -307,9 +311,10 @@ class ProposeRoutinesCapability(BaseCapability):
 
                 **Input:** Single RUN_ANALYSIS context
                 **Output:** ROUTINE_PROPOSAL context with proposals
-                """).strip(),
+                """
+            ).strip(),
             examples=[example],
-            priority=7
+            priority=7,
         )
 
     def _create_classifier_guide(self) -> Optional[TaskClassifierGuide]:
@@ -318,20 +323,14 @@ class ProposeRoutinesCapability(BaseCapability):
             instructions="Identify routine proposal requests.",
             examples=[
                 ClassifierExample(
-                    query="Suggest a routine",
-                    result=True,
-                    reason="Direct proposal request"
+                    query="Suggest a routine", result=True, reason="Direct proposal request"
                 ),
                 ClassifierExample(
-                    query="What should I try?",
-                    result=True,
-                    reason="Asks for recommendations"
+                    query="What should I try?", result=True, reason="Asks for recommendations"
                 ),
                 ClassifierExample(
-                    query="Show me recent runs",
-                    result=False,
-                    reason="Query, not proposal"
+                    query="Show me recent runs", result=False, reason="Query, not proposal"
                 ),
             ],
-            actions_if_true=ClassifierActions()
+            actions_if_true=ClassifierActions(),
         )

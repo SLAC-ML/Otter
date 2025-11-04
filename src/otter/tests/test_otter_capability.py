@@ -15,9 +15,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
-from applications.otter.capabilities.query_runs import QueryRunsCapability
+from otter.capabilities.query_runs import QueryRunsCapability
 from framework.state import AgentState
 
 
@@ -40,7 +41,7 @@ async def test_capability_with_filter():
                     "parameters": {"num_runs": 1},  # Explicit parameters
                     "expected_output": "BADGER_RUN",
                     "success_criteria": "Most recent run loaded",
-                    "inputs": []
+                    "inputs": [],
                 }
             ]
         },
@@ -90,6 +91,7 @@ async def test_capability_with_filter():
     except Exception as e:
         print(f"\n❌ Capability execution failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -113,7 +115,7 @@ async def test_capability_no_filter():
                     # NO PARAMETERS KEY!
                     "expected_output": "BADGER_RUN",
                     "success_criteria": "Most recent run loaded",
-                    "inputs": []
+                    "inputs": [],
                 }
             ]
         },
@@ -148,6 +150,7 @@ async def test_capability_no_filter():
     except Exception as e:
         print(f"\n❌ Capability execution failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -170,7 +173,7 @@ async def test_capability_with_limit_5():
                     "parameters": {"num_runs": 5},  # Request 5 runs
                     "expected_output": "BADGER_RUN",
                     "success_criteria": "5 runs loaded",
-                    "inputs": []
+                    "inputs": [],
                 }
             ]
         },
@@ -204,6 +207,7 @@ async def test_capability_with_limit_5():
     except Exception as e:
         print(f"\n❌ Capability execution failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -220,8 +224,7 @@ async def test_capability_with_time_range():
 
     # Create a TIME_RANGE context for August 2025
     time_range_context = TimeRangeContext(
-        start_date=datetime(2025, 8, 1, 0, 0, 0),
-        end_date=datetime(2025, 8, 31, 23, 59, 59)
+        start_date=datetime(2025, 8, 1, 0, 0, 0), end_date=datetime(2025, 8, 31, 23, 59, 59)
     )
 
     # Create mock state with TIME_RANGE in inputs
@@ -237,16 +240,14 @@ async def test_capability_with_time_range():
                     "parameters": {"num_runs": 3},
                     "expected_output": "BADGER_RUN",
                     "success_criteria": "3 runs from August 2025 loaded",
-                    "inputs": [{"TIME_RANGE": "time_range_august_2025"}]  # Reference to TIME_RANGE context
+                    "inputs": [
+                        {"TIME_RANGE": "time_range_august_2025"}
+                    ],  # Reference to TIME_RANGE context
                 }
             ]
         },
         "planning_current_step_index": 0,
-        "capability_context_data": {
-            "TIME_RANGE": {
-                "time_range_august_2025": time_range_context
-            }
-        },
+        "capability_context_data": {"TIME_RANGE": {"time_range_august_2025": time_range_context}},
     }
 
     print("\n📋 Mock Step Configuration:")
@@ -276,13 +277,17 @@ async def test_capability_with_time_range():
         for key in badger_run_keys:
             context_dict = result[key]
             for context in context_dict.values():
-                if hasattr(context, 'timestamp'):
+                if hasattr(context, "timestamp"):
                     if context.timestamp.month == 8 and context.timestamp.year == 2025:
                         august_runs += 1
-                        print(f"  ✅ Run from August 2025: {context.run_name} ({context.timestamp})")
+                        print(
+                            f"  ✅ Run from August 2025: {context.run_name} ({context.timestamp})"
+                        )
                     else:
                         non_august_runs += 1
-                        print(f"  ❌ Run NOT from August 2025: {context.run_name} ({context.timestamp})")
+                        print(
+                            f"  ❌ Run NOT from August 2025: {context.run_name} ({context.timestamp})"
+                        )
 
         print("\n📈 Time Range Filter Results:")
         print(f"  Runs from August 2025: {august_runs}")
@@ -292,15 +297,20 @@ async def test_capability_with_time_range():
             print("\n❌ TIME_RANGE filter was NOT applied correctly!")
             return False
         elif august_runs == 0:
-            print("\n⚠️  No runs found in August 2025 (might be expected if archive doesn't have data)")
+            print(
+                "\n⚠️  No runs found in August 2025 (might be expected if archive doesn't have data)"
+            )
             return True
         else:
-            print("\n✅ TIME_RANGE filter applied correctly - all returned runs are from August 2025!")
+            print(
+                "\n✅ TIME_RANGE filter applied correctly - all returned runs are from August 2025!"
+            )
             return True
 
     except Exception as e:
         print(f"\n❌ Capability execution failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

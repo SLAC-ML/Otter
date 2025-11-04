@@ -17,23 +17,26 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Mock the streaming module before importing capabilities
 from unittest.mock import MagicMock, patch
 import configs.streaming as streaming_module
 
+
 # Create a mock streamer that doesn't require LangGraph context
 class MockStreamer:
     def status(self, message):
         print(f"  📝 {message}")
 
+
 # Patch get_streamer to return mock
 streaming_module.get_streamer = lambda *args, **kwargs: MockStreamer()
 
-from applications.otter.capabilities.query_runs import QueryRunsCapability
-from applications.otter.capabilities.analyze_runs import AnalyzeRunsCapability
-from applications.otter.capabilities.propose_routines import ProposeRoutinesCapability
+from otter.capabilities.query_runs import QueryRunsCapability
+from otter.capabilities.analyze_runs import AnalyzeRunsCapability
+from otter.capabilities.propose_routines import ProposeRoutinesCapability
 
 
 async def test_full_workflow():
@@ -63,7 +66,7 @@ async def test_full_workflow():
                     "parameters": {"num_runs": 10},
                     "expected_output": "BADGER_RUN",
                     "success_criteria": "10 runs loaded",
-                    "inputs": []
+                    "inputs": [],
                 }
             ]
         },
@@ -92,6 +95,7 @@ async def test_full_workflow():
     except Exception as e:
         print(f"❌ Query runs failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -117,7 +121,7 @@ async def test_full_workflow():
                     "parameters": {},
                     "expected_output": "analysis_summary",
                     "success_criteria": "Analysis completed",
-                    "inputs": analyze_inputs
+                    "inputs": analyze_inputs,
                 }
             ]
         },
@@ -141,22 +145,27 @@ async def test_full_workflow():
             print(f"  Total evaluations: {analysis_data['overview']['total_evaluations']}")
 
             print(f"\n🔧 Algorithm Performance:")
-            for algo, stats in analysis_data['algorithm_performance'].items():
-                avg_imp = stats.get('avg_improvement_pct', 'N/A')
+            for algo, stats in analysis_data["algorithm_performance"].items():
+                avg_imp = stats.get("avg_improvement_pct", "N/A")
                 print(f"  {algo}: {stats['num_runs']} runs, avg improvement: {avg_imp}%")
 
             print(f"\n🎯 Top Performers:")
-            for performer in analysis_data['success_patterns']['top_performers'][:3]:
-                print(f"  {performer['run_name']}: {performer['algorithm']} ({performer['improvement_pct']:.1f}% improvement)")
+            for performer in analysis_data["success_patterns"]["top_performers"][:3]:
+                print(
+                    f"  {performer['run_name']}: {performer['algorithm']} ({performer['improvement_pct']:.1f}% improvement)"
+                )
 
             # Update state for next step
-            analyze_state["execution_step_results"].update(analyze_result.get("execution_step_results", {}))
+            analyze_state["execution_step_results"].update(
+                analyze_result.get("execution_step_results", {})
+            )
         else:
             print("⚠️  No analysis results found in execution_step_results")
 
     except Exception as e:
         print(f"❌ Analyze runs failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -180,7 +189,7 @@ async def test_full_workflow():
                     "parameters": {"num_proposals": 3},
                     "expected_output": "routine_proposals",
                     "success_criteria": "3 proposals generated",
-                    "inputs": analyze_inputs  # Same inputs as analyze
+                    "inputs": analyze_inputs,  # Same inputs as analyze
                 }
             ]
         },
@@ -200,7 +209,7 @@ async def test_full_workflow():
             print(f"\n✅ Generated {proposal_data['num_proposals']} proposals!")
 
             print(f"\n💡 Routine Proposals:")
-            for i, proposal in enumerate(proposal_data['proposals'], 1):
+            for i, proposal in enumerate(proposal_data["proposals"], 1):
                 print(f"\n  Proposal {i}: {proposal['proposal_name']}")
                 print(f"    Algorithm: {proposal['algorithm']}")
                 print(f"    Beamline: {proposal['beamline']}")
@@ -213,7 +222,7 @@ async def test_full_workflow():
                 print(f"    Reference runs: {', '.join(proposal['reference_runs'][:2])}")
 
             print(f"\n📋 Generation Context:")
-            gen_ctx = proposal_data['generation_context']
+            gen_ctx = proposal_data["generation_context"]
             print(f"  Successful runs used: {gen_ctx['successful_runs_used']}")
             print(f"  Algorithm distribution: {gen_ctx['algorithm_distribution']}")
 
@@ -223,6 +232,7 @@ async def test_full_workflow():
     except Exception as e:
         print(f"❌ Propose routines failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -268,7 +278,7 @@ async def test_propose_without_analyze():
                     "parameters": {"num_runs": 5},
                     "expected_output": "BADGER_RUN",
                     "success_criteria": "5 runs loaded",
-                    "inputs": []
+                    "inputs": [],
                 }
             ]
         },
@@ -305,7 +315,7 @@ async def test_propose_without_analyze():
                     "parameters": {"num_proposals": 2},
                     "expected_output": "routine_proposals",
                     "success_criteria": "2 proposals generated",
-                    "inputs": propose_inputs
+                    "inputs": propose_inputs,
                 }
             ]
         },
@@ -329,6 +339,7 @@ async def test_propose_without_analyze():
     except Exception as e:
         print(f"❌ Propose failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

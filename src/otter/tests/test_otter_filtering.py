@@ -15,9 +15,10 @@ project_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
-from applications.otter.data_sources.badger_archive import BadgerArchiveDataSource
+from otter.data_sources.badger_archive import BadgerArchiveDataSource
 
 
 def test_list_runs_with_limit():
@@ -43,7 +44,7 @@ def test_list_runs_with_limit():
         return False
 
     # Check if it's a hidden file
-    if '/.ipynb_checkpoints/' in runs[0] or runs[0].startswith('.'):
+    if "/.ipynb_checkpoints/" in runs[0] or runs[0].startswith("."):
         print(f"   ✗ ERROR: Returned hidden file: {runs[0]}")
         return False
     else:
@@ -78,7 +79,7 @@ def test_list_runs_with_limit_5():
     # Check if any are hidden files
     hidden_found = False
     for run in runs:
-        if '/.ipynb_checkpoints/' in run or '/.git/' in run or run.startswith('.'):
+        if "/.ipynb_checkpoints/" in run or "/.git/" in run or run.startswith("."):
             print(f"   ✗ ERROR: Found hidden file: {run}")
             hidden_found = True
 
@@ -107,7 +108,9 @@ def test_no_limit():
     print(f"\n✅ Found {len(runs)} total run(s) in archive")
 
     # Check for hidden files
-    hidden_count = sum(1 for r in runs if '/.ipynb_checkpoints/' in r or '/.' in r or r.startswith('.'))
+    hidden_count = sum(
+        1 for r in runs if "/.ipynb_checkpoints/" in r or "/." in r or r.startswith(".")
+    )
 
     if hidden_count == 0:
         print(f"   ✓ No hidden files found (good!)")
@@ -115,7 +118,9 @@ def test_no_limit():
     else:
         print(f"   ✗ ERROR: Found {hidden_count} hidden files")
         # Show first few examples
-        hidden_examples = [r for r in runs if '/.ipynb_checkpoints/' in r or '/.' in r or r.startswith('.')][:3]
+        hidden_examples = [
+            r for r in runs if "/.ipynb_checkpoints/" in r or "/." in r or r.startswith(".")
+        ][:3]
         for ex in hidden_examples:
             print(f"      Example: {ex}")
         return False
@@ -156,6 +161,7 @@ def test_load_metadata():
     except Exception as e:
         print(f"\n✗ Failed to load metadata: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

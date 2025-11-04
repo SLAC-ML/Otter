@@ -14,8 +14,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from applications.otter.data_sources.badger_archive import BadgerArchiveDataSource
-from applications.otter.context_classes import BadgerRunContext
+from otter.data_sources.badger_archive import BadgerArchiveDataSource
+from otter.context_classes import BadgerRunContext
 
 
 def test_data_source():
@@ -80,10 +80,7 @@ def test_list_runs(data_source):
 
     # Test 4: Get runs from time range
     print("\n2.4: Get runs from October 2025 (time_range filter)")
-    runs = data_source.list_runs(
-        time_range={"start": "2025-10-01", "end": "2025-10-31"},
-        limit=3
-    )
+    runs = data_source.list_runs(time_range={"start": "2025-10-01", "end": "2025-10-31"}, limit=3)
     if runs:
         print(f"✓ Found {len(runs)} runs from October 2025:")
         for i, run in enumerate(runs, 1):
@@ -114,27 +111,27 @@ def test_load_metadata(data_source, run_path):
         print(f"  Timestamp: {metadata['timestamp']}")
         # Variables are now List[Dict[str, List[float]]]
         print(f"  Variables ({len(metadata['variables'])}):")
-        for var_dict in metadata['variables'][:3]:
+        for var_dict in metadata["variables"][:3]:
             var_name = list(var_dict.keys())[0]
             var_range = var_dict[var_name]
             print(f"    - {var_name}: [{var_range[0]:.4f}, {var_range[1]:.4f}]")
-        if len(metadata['variables']) > 3:
+        if len(metadata["variables"]) > 3:
             print(f"    ... and {len(metadata['variables']) - 3} more")
         # Objectives are now List[Dict[str, str]]
         print(f"  Objectives ({len(metadata['objectives'])}):")
-        for obj_dict in metadata['objectives']:
+        for obj_dict in metadata["objectives"]:
             obj_name = list(obj_dict.keys())[0]
             direction = obj_dict[obj_name]
             print(f"    - {obj_name}: {direction}")
         print(f"  Constraints: {metadata.get('constraints', [])}")
         print(f"  Evaluations: {metadata['num_evaluations']}")
-        if metadata.get('initial_values'):
+        if metadata.get("initial_values"):
             print(f"  Initial values: {metadata['initial_values']}")
-        if metadata.get('min_values'):
+        if metadata.get("min_values"):
             print(f"  Min values: {metadata['min_values']}")
-        if metadata.get('max_values'):
+        if metadata.get("max_values"):
             print(f"  Max values: {metadata['max_values']}")
-        if metadata.get('final_values'):
+        if metadata.get("final_values"):
             print(f"  Final values: {metadata['final_values']}")
 
         return metadata
@@ -142,6 +139,7 @@ def test_load_metadata(data_source, run_path):
     except Exception as e:
         print(f"✗ Failed to load metadata: {e}")
         import traceback
+
         traceback.print_exc()
         return None
 
@@ -170,7 +168,7 @@ def test_context_creation(metadata, run_path):
             max_objective_values=metadata.get("max_values"),
             final_objective_values=metadata.get("final_values"),
             description=metadata.get("description", ""),
-            tags=metadata.get("tags")
+            tags=metadata.get("tags"),
         )
         print("✓ Context created successfully")
 
@@ -197,6 +195,7 @@ def test_context_creation(metadata, run_path):
     except Exception as e:
         print(f"✗ Failed to create context: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

@@ -17,8 +17,11 @@ from framework.base.decorators import capability_node
 from framework.base.capability import BaseCapability
 from framework.base.errors import ErrorClassification, ErrorSeverity
 from framework.base.examples import (
-    OrchestratorGuide, OrchestratorExample,
-    TaskClassifierGuide, ClassifierExample, ClassifierActions
+    OrchestratorGuide,
+    OrchestratorExample,
+    TaskClassifierGuide,
+    ClassifierExample,
+    ClassifierActions,
 )
 from framework.base.planning import PlannedStep
 from framework.state import AgentState, StateManager
@@ -29,7 +32,7 @@ from configs.streaming import get_streamer
 from configs.config import get_config_value
 
 # Application imports
-from applications.otter.context_classes import BadgerRunContext, BadgerRunsContext
+from otter.context_classes import BadgerRunContext, BadgerRunsContext
 
 logger = get_logger("otter", "analyze_runs")
 registry = get_registry()
@@ -39,19 +42,23 @@ registry = get_registry()
 # Custom Exceptions
 # ====================
 
+
 class AnalyzeRunsError(Exception):
     """Base class for analyze runs errors."""
+
     pass
 
 
 class InsufficientDataError(AnalyzeRunsError):
     """Raised when not enough runs provided for analysis."""
+
     pass
 
 
 # ====================
 # Capability Definition
 # ====================
+
 
 @capability_node
 class AnalyzeRunsCapability(BaseCapability):
@@ -87,9 +94,7 @@ class AnalyzeRunsCapability(BaseCapability):
             # Extract BADGER_RUNS context from inputs (hard requirement)
             try:
                 contexts = context_manager.extract_from_step(
-                    step, state,
-                    constraints=["BADGER_RUNS"],
-                    constraint_mode="hard"
+                    step, state, constraints=["BADGER_RUNS"], constraint_mode="hard"
                 )
                 runs_container = contexts[registry.context_types.BADGER_RUNS]
             except ValueError as e:
@@ -123,12 +128,9 @@ class AnalyzeRunsCapability(BaseCapability):
             # ====================
             streamer.status("Analyzing algorithm performance...")
 
-            algorithm_stats = defaultdict(lambda: {
-                "count": 0,
-                "total_evaluations": 0,
-                "improvements": [],
-                "runs": []
-            })
+            algorithm_stats = defaultdict(
+                lambda: {"count": 0, "total_evaluations": 0, "improvements": [], "runs": []}
+            )
 
             for run in run_contexts:
                 algo = run.algorithm
@@ -140,13 +142,16 @@ class AnalyzeRunsCapability(BaseCapability):
                 # Calculate improvement if available
                 if run.initial_objective_values and run.final_objective_values:
                     for obj_name in run._get_objective_names():
-                        if obj_name in run.initial_objective_values and obj_name in run.final_objective_values:
+                        if (
+                            obj_name in run.initial_objective_values
+                            and obj_name in run.final_objective_values
+                        ):
                             initial = run.initial_objective_values[obj_name]
                             final = run.final_objective_values[obj_name]
                             direction = run._get_objective_direction(obj_name)
 
                             if initial != 0:
-                                if direction == 'MAXIMIZE':
+                                if direction == "MAXIMIZE":
                                     improvement = ((final - initial) / abs(initial)) * 100
                                 else:  # MINIMIZE
                                     improvement = ((initial - final) / abs(initial)) * 100
@@ -159,7 +164,7 @@ class AnalyzeRunsCapability(BaseCapability):
                     "num_runs": stats["count"],
                     "total_evaluations": stats["total_evaluations"],
                     "avg_evaluations_per_run": stats["total_evaluations"] / stats["count"],
-                    "run_names": stats["runs"]
+                    "run_names": stats["runs"],
                 }
 
                 if stats["improvements"]:
@@ -183,11 +188,9 @@ class AnalyzeRunsCapability(BaseCapability):
             # ====================
             streamer.status("Analyzing objectives...")
 
-            objective_stats = defaultdict(lambda: {
-                "count": 0,
-                "directions": Counter(),
-                "improvements": []
-            })
+            objective_stats = defaultdict(
+                lambda: {"count": 0, "directions": Counter(), "improvements": []}
+            )
 
             for run in run_contexts:
                 for obj_dict in run.objectives:
@@ -199,12 +202,15 @@ class AnalyzeRunsCapability(BaseCapability):
 
                     # Collect improvement if available
                     if run.initial_objective_values and run.final_objective_values:
-                        if obj_name in run.initial_objective_values and obj_name in run.final_objective_values:
+                        if (
+                            obj_name in run.initial_objective_values
+                            and obj_name in run.final_objective_values
+                        ):
                             initial = run.initial_objective_values[obj_name]
                             final = run.final_objective_values[obj_name]
 
                             if initial != 0:
-                                if obj_direction == 'MAXIMIZE':
+                                if obj_direction == "MAXIMIZE":
                                     improvement = ((final - initial) / abs(initial)) * 100
                                 else:
                                     improvement = ((initial - final) / abs(initial)) * 100
@@ -215,7 +221,7 @@ class AnalyzeRunsCapability(BaseCapability):
             for obj_name, stats in objective_stats.items():
                 summary = {
                     "num_runs": stats["count"],
-                    "direction": stats["directions"].most_common(1)[0][0]
+                    "direction": stats["directions"].most_common(1)[0][0],
                 }
 
                 if stats["improvements"]:
@@ -237,13 +243,16 @@ class AnalyzeRunsCapability(BaseCapability):
                 if run.initial_objective_values and run.final_objective_values:
                     improvements = []
                     for obj_name in run._get_objective_names():
-                        if obj_name in run.initial_objective_values and obj_name in run.final_objective_values:
+                        if (
+                            obj_name in run.initial_objective_values
+                            and obj_name in run.final_objective_values
+                        ):
                             initial = run.initial_objective_values[obj_name]
                             final = run.final_objective_values[obj_name]
                             direction = run._get_objective_direction(obj_name)
 
                             if initial != 0:
-                                if direction == 'MAXIMIZE':
+                                if direction == "MAXIMIZE":
                                     improvement = ((final - initial) / abs(initial)) * 100
                                 else:
                                     improvement = ((initial - final) / abs(initial)) * 100
@@ -268,10 +277,10 @@ class AnalyzeRunsCapability(BaseCapability):
                         "run_name": run.run_name,
                         "algorithm": run.algorithm,
                         "beamline": run.beamline,
-                        "improvement_pct": improvement
+                        "improvement_pct": improvement,
                     }
                     for run, improvement in top_performers
-                ]
+                ],
             }
 
             # ====================
@@ -302,13 +311,21 @@ class AnalyzeRunsCapability(BaseCapability):
                         initial = run.initial_objective_values.get(obj_name)
 
                         # Use BEST values (not final) per BO domain knowledge
-                        if direction == 'MAXIMIZE':
-                            best = run.max_objective_values.get(obj_name) if run.max_objective_values else run.final_objective_values.get(obj_name)
+                        if direction == "MAXIMIZE":
+                            best = (
+                                run.max_objective_values.get(obj_name)
+                                if run.max_objective_values
+                                else run.final_objective_values.get(obj_name)
+                            )
                         else:  # MINIMIZE
-                            best = run.min_objective_values.get(obj_name) if run.min_objective_values else run.final_objective_values.get(obj_name)
+                            best = (
+                                run.min_objective_values.get(obj_name)
+                                if run.min_objective_values
+                                else run.final_objective_values.get(obj_name)
+                            )
 
                         if initial is not None and best is not None and initial != 0:
-                            if direction == 'MAXIMIZE':
+                            if direction == "MAXIMIZE":
                                 improvement_pct = ((best - initial) / abs(initial)) * 100
                             else:  # MINIMIZE
                                 improvement_pct = ((initial - best) / abs(initial)) * 100
@@ -339,10 +356,10 @@ class AnalyzeRunsCapability(BaseCapability):
                     "time_range": {
                         "earliest": earliest_run.isoformat(),
                         "latest": latest_run.isoformat(),
-                        "span_days": round(time_span, 1)
+                        "span_days": round(time_span, 1),
                     },
                     "total_evaluations": total_evaluations,
-                    "avg_evaluations_per_run": round(avg_evaluations, 1)
+                    "avg_evaluations_per_run": round(avg_evaluations, 1),
                 },
                 "algorithm_performance": dict(algorithm_summary),
                 "beamline_distribution": dict(beamline_counts),
@@ -351,28 +368,23 @@ class AnalyzeRunsCapability(BaseCapability):
                 "success_patterns": {
                     "top_algorithms": dict(success_patterns["top_algorithms"]),
                     "top_beamlines": dict(success_patterns["top_beamlines"]),
-                    "top_performers": success_patterns["top_performers"][:5]  # Limit to top 5
+                    "top_performers": success_patterns["top_performers"][:5],  # Limit to top 5
                 },
-                "per_run_details": per_run_details  # New: structured per-run data for tables
+                "per_run_details": per_run_details,  # New: structured per-run data for tables
             }
 
             streamer.status(f"Analysis complete! Analyzed {total_runs} runs.")
             logger.success(f"Successfully analyzed {total_runs} runs")
 
             # Create RunAnalysisContext and store it
-            from applications.otter.context_classes import RunAnalysisContext
+            from otter.context_classes import RunAnalysisContext
 
-            analysis_context = RunAnalysisContext(
-                analysis_data=analysis_result
-            )
+            analysis_context = RunAnalysisContext(analysis_data=analysis_result)
 
             # Store context and return updates
             context_key = step.get("context_key", "run_analysis")
             return StateManager.store_context(
-                state,
-                registry.context_types.RUN_ANALYSIS,
-                context_key,
-                analysis_context
+                state, registry.context_types.RUN_ANALYSIS, context_key, analysis_context
             )
 
         except InsufficientDataError as e:
@@ -395,8 +407,8 @@ class AnalyzeRunsCapability(BaseCapability):
                 user_message=f"Cannot perform analysis: {str(exc)}",
                 metadata={
                     "technical_details": str(exc),
-                    "resolution": "Ensure at least one BADGER_RUN context is provided as input"
-                }
+                    "resolution": "Ensure at least one BADGER_RUN context is provided as input",
+                },
             )
 
         else:
@@ -404,7 +416,7 @@ class AnalyzeRunsCapability(BaseCapability):
             return ErrorClassification(
                 severity=ErrorSeverity.RETRIABLE,
                 user_message=f"Analysis error: {str(exc)}",
-                metadata={"technical_details": str(exc)}
+                metadata={"technical_details": str(exc)},
             )
 
     def _create_orchestrator_guide(self) -> Optional[OrchestratorGuide]:
@@ -421,11 +433,11 @@ class AnalyzeRunsCapability(BaseCapability):
                 expected_output=registry.context_types.RUN_ANALYSIS,
                 success_criteria="Statistical analysis of runs completed",
                 inputs=[{"BADGER_RUNS": "recent_runs"}],  # Single container from query_runs
-                parameters={}
+                parameters={},
             ),
             scenario_description="User wants to understand patterns in recent runs",
             notes="Provide BADGER_RUNS container from previous query_runs step. "
-                  "Analysis will compare algorithms, objectives, and success rates across all runs in container."
+            "Analysis will compare algorithms, objectives, and success rates across all runs in container.",
         )
 
         # Example 2: Algorithm comparison workflow (2-step)
@@ -439,13 +451,13 @@ class AnalyzeRunsCapability(BaseCapability):
                 inputs=[
                     {"BADGER_RUN": "neldermead_runs"},  # From step 1
                 ],
-                parameters={}
+                parameters={},
             ),
             scenario_description="User asks 'Which algorithm performed best?' - requires 2 steps:\n"
-                                "Step 1: query_runs to load all runs\n"
-                                "Step 2: analyze_runs with those contexts to compare algorithms",
+            "Step 1: query_runs to load all runs\n"
+            "Step 2: analyze_runs with those contexts to compare algorithms",
             notes="IMPORTANT: analyze_runs requires BADGER_RUN contexts as input. "
-                  "It cannot query runs itself - use query_runs first!"
+            "It cannot query runs itself - use query_runs first!",
         )
 
         # Example 3: Trend analysis
@@ -456,17 +468,16 @@ class AnalyzeRunsCapability(BaseCapability):
                 task_objective="Analyze optimization trends over the past month",
                 expected_output="analysis_summary",
                 success_criteria="Temporal trends and success patterns identified",
-                inputs=[
-                    {"BADGER_RUN": "monthly_runs"}  # From query_runs with time filter
-                ],
-                parameters={}
+                inputs=[{"BADGER_RUN": "monthly_runs"}],  # From query_runs with time filter
+                parameters={},
             ),
             scenario_description="User wants to see how optimization performance changed over time",
-            notes="Use query_runs with time_range filter first, then analyze_runs"
+            notes="Use query_runs with time_range filter first, then analyze_runs",
         )
 
         return OrchestratorGuide(
-            instructions=textwrap.dedent(f"""
+            instructions=textwrap.dedent(
+                f"""
                 **When to plan "analyze_runs" steps:**
                 - User asks for comparison across multiple runs (algorithms, objectives, beamlines)
                 - User wants statistics or trends from historical data
@@ -536,13 +547,14 @@ class AnalyzeRunsCapability(BaseCapability):
                 - analyze_runs PRODUCES a RUN_ANALYSIS context (for propose_routines)
                 - Results also useful for direct user presentation via respond
                 - Required input for propose_routines capability
-                """).strip(),
+                """
+            ).strip(),
             examples=[
                 simple_analysis_example,
                 algorithm_comparison_example,
-                trend_analysis_example
+                trend_analysis_example,
             ],
-            priority=6
+            priority=6,
         )
 
     def _create_classifier_guide(self) -> Optional[TaskClassifierGuide]:
@@ -555,38 +567,38 @@ class AnalyzeRunsCapability(BaseCapability):
                 ClassifierExample(
                     query="Which algorithm performed best?",
                     result=True,
-                    reason="Requires comparing algorithms across multiple runs."
+                    reason="Requires comparing algorithms across multiple runs.",
                 ),
                 ClassifierExample(
                     query="What patterns do you see in recent runs?",
                     result=True,
-                    reason="Pattern identification requires analyzing multiple runs."
+                    reason="Pattern identification requires analyzing multiple runs.",
                 ),
                 ClassifierExample(
                     query="Compare success rates across beamlines",
                     result=True,
-                    reason="Beamline comparison requires run analysis."
+                    reason="Beamline comparison requires run analysis.",
                 ),
                 ClassifierExample(
                     query="Show me trends over the past month",
                     result=True,
-                    reason="Trend analysis requires analyzing runs over time."
+                    reason="Trend analysis requires analyzing runs over time.",
                 ),
                 ClassifierExample(
                     query="What was the best performing run?",
                     result=True,
-                    reason="Identifying best run requires comparison analysis."
+                    reason="Identifying best run requires comparison analysis.",
                 ),
                 ClassifierExample(
                     query="Show me the most recent run",
                     result=False,
-                    reason="This only requires query_runs, not analysis."
+                    reason="This only requires query_runs, not analysis.",
                 ),
                 ClassifierExample(
                     query="Load runs from last week",
                     result=False,
-                    reason="This is run querying, not analysis (use query_runs)."
+                    reason="This is run querying, not analysis (use query_runs).",
                 ),
             ],
-            actions_if_true=ClassifierActions()
+            actions_if_true=ClassifierActions(),
         )

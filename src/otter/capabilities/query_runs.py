@@ -30,8 +30,8 @@ from configs.streaming import get_streamer
 from configs.config import get_config_value
 
 # Application imports
-from applications.otter.context_classes import BadgerRunContext, BadgerRunsContext
-from applications.otter.data_sources.badger_archive import BadgerArchiveDataSource
+from otter.context_classes import BadgerRunContext, BadgerRunsContext
+from otter.data_sources.badger_archive import BadgerArchiveDataSource
 
 logger = get_logger("otter", "query_runs")
 registry = get_registry()
@@ -81,7 +81,9 @@ class QueryRunsCapability(BaseCapability):
     """
 
     name = "query_runs"
-    description = "Query Badger optimization runs from archive using filters from RUN_QUERY_FILTERS context"
+    description = (
+        "Query Badger optimization runs from archive using filters from RUN_QUERY_FILTERS context"
+    )
     provides = ["BADGER_RUNS"]  # Provides a container with multiple runs
     requires = ["RUN_QUERY_FILTERS"]  # Hard requirement: must have filters from extract_run_filters
 
@@ -101,9 +103,7 @@ class QueryRunsCapability(BaseCapability):
             # RUN_QUERY_FILTERS is now a hard requirement
             try:
                 contexts = context_manager.extract_from_step(
-                    step, state,
-                    constraints=["RUN_QUERY_FILTERS"],
-                    constraint_mode="hard"
+                    step, state, constraints=["RUN_QUERY_FILTERS"], constraint_mode="hard"
                 )
                 filter_context = contexts[registry.context_types.RUN_QUERY_FILTERS]
             except ValueError as e:
@@ -141,10 +141,8 @@ class QueryRunsCapability(BaseCapability):
                 streamer.status("Querying runs (no filters specified)")
 
             # Load archive root from config
-            # Config path: applications.otter.external_services.badger.archive_root
-            archive_root = get_config_value(
-                "applications.otter.external_services.badger.archive_root"
-            )
+            # Config path: otter.external_services.badger.archive_root
+            archive_root = get_config_value("otter.external_services.badger.archive_root")
             if not archive_root:
                 raise ArchiveAccessError(
                     "Archive root not configured. Please set OTTER_BADGER_ARCHIVE environment variable."
@@ -246,10 +244,7 @@ class QueryRunsCapability(BaseCapability):
 
             # Store single container context under step's context_key
             context_updates = StateManager.store_context(
-                state,
-                registry.context_types.BADGER_RUNS,
-                step.get("context_key"),
-                runs_container
+                state, registry.context_types.BADGER_RUNS, step.get("context_key"), runs_container
             )
 
             return context_updates
@@ -386,7 +381,9 @@ class QueryRunsCapability(BaseCapability):
                 task_objective="Tell user which algorithms were used in the loaded runs",
                 expected_output="user_response",
                 success_criteria="User receives information about algorithms from run contexts",
-                inputs=[{"BADGER_RUNS": "recent_runs"}],  # References BADGER_RUNS container from query_runs step
+                inputs=[
+                    {"BADGER_RUNS": "recent_runs"}
+                ],  # References BADGER_RUNS container from query_runs step
                 parameters={},
             ),
             scenario_description="Extract information from loaded runs",

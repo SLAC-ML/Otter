@@ -9,7 +9,8 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
-from applications.otter.data_sources.badger_archive import BadgerArchiveDataSource
+from otter.data_sources.badger_archive import BadgerArchiveDataSource
+
 
 def test_beamline_filter():
     """Test that beamline filter works correctly."""
@@ -56,7 +57,7 @@ def test_beamline_filter():
     print(f"✅ Found {len(runs)} runs from all beamlines")
     beamlines_seen = set()
     for i, run in enumerate(runs, 1):
-        beamline = run.split('/')[0]
+        beamline = run.split("/")[0]
         beamlines_seen.add(beamline)
         print(f"  {i}. {run} (beamline: {beamline})")
     print(f"  Beamlines represented: {sorted(beamlines_seen)}")
@@ -72,7 +73,7 @@ def test_beamline_filter():
         print(f"  Beamline (from metadata): {metadata.get('beamline')}")
         print(f"  Badger Environment (from run file): {metadata.get('badger_environment')}")
 
-        if metadata.get('beamline') == 'cu_hxr':
+        if metadata.get("beamline") == "cu_hxr":
             print(f"  ✅ Beamline field correctly extracted from path")
         else:
             print(f"  ✗ Expected beamline='cu_hxr', got '{metadata.get('beamline')}'")
@@ -87,6 +88,7 @@ def test_beamline_filter():
     print("=" * 80)
 
     return True
+
 
 if __name__ == "__main__":
     success = test_beamline_filter()

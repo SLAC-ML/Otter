@@ -5,6 +5,7 @@ This capability uses an LLM to extract structured filter criteria from natural
 language queries for Badger run searches. It handles disambiguation between
 beamline directories, Badger environment names, algorithms, and objectives.
 """
+
 from __future__ import annotations
 from typing import Dict, Any, Optional, TYPE_CHECKING
 import asyncio
@@ -19,14 +20,17 @@ from framework.base.capability import BaseCapability
 from framework.base.errors import ErrorClassification, ErrorSeverity
 from framework.base.planning import PlannedStep
 from framework.base.examples import (
-    OrchestratorGuide, OrchestratorExample,
-    TaskClassifierGuide, ClassifierExample, ClassifierActions
+    OrchestratorGuide,
+    OrchestratorExample,
+    TaskClassifierGuide,
+    ClassifierExample,
+    ClassifierActions,
 )
 from framework.state import StateManager
 from framework.registry import get_registry
 
 # Application imports
-from applications.otter.context_classes import RunQueryFilters
+from otter.context_classes import RunQueryFilters
 
 # Model and configuration
 from framework.models import get_chat_completion
@@ -42,13 +46,16 @@ registry = get_registry()
 # Filter Extraction Errors
 # ===================================================================
 
+
 class FilterExtractionError(Exception):
     """Base class for all filter extraction errors."""
+
     pass
 
 
 class InvalidFilterError(FilterExtractionError):
     """Raised when extracted filters contain invalid values."""
+
     pass
 
 
@@ -58,8 +65,10 @@ class InvalidFilterError(FilterExtractionError):
 
 from pydantic import BaseModel, Field as PydanticField
 
+
 class ExtractedFilters(BaseModel):
     """Result from LLM-based filter extraction."""
+
     num_runs: Optional[int] = None
     beamline: Optional[str] = None
     algorithm: Optional[str] = None
@@ -78,7 +87,8 @@ async def extract_filters_from_query(user_query: str) -> ExtractedFilters:
     Returns:
         ExtractedFilters with parsed filter values
     """
-    system_prompt = textwrap.dedent("""
+    system_prompt = textwrap.dedent(
+        """
         You are a Badger run filter extraction assistant. Extract structured filter criteria from natural language queries.
 
         Available filter fields:
@@ -138,7 +148,8 @@ async def extract_filters_from_query(user_query: str) -> ExtractedFilters:
         Response: {"num_runs": 5, "badger_environment": "lcls", "sort_order": "oldest_first"}
 
         Respond ONLY with the JSON object. Leave fields null if not mentioned in the query.
-        """)
+        """
+    )
 
     try:
         # Use framework's filter_extraction model (configured in config.yml)
@@ -169,20 +180,20 @@ async def extract_filters_from_query(user_query: str) -> ExtractedFilters:
 # Capability Implementation
 # ===================================================================
 
+
 @capability_node
 class ExtractRunFiltersCapability(BaseCapability):
     """Extract structured run query filters from natural language."""
 
     name = "extract_run_filters"
-    description = "Extract structured filter criteria from natural language queries for Badger run searches"
+    description = (
+        "Extract structured filter criteria from natural language queries for Badger run searches"
+    )
     provides = ["RUN_QUERY_FILTERS"]
     requires = []
 
     @staticmethod
-    async def execute(
-        state: AgentState,
-        **kwargs
-    ) -> Dict[str, Any]:
+    async def execute(state: AgentState, **kwargs) -> Dict[str, Any]:
         """
         Extract filter criteria from user query using LLM.
 
@@ -192,7 +203,7 @@ class ExtractRunFiltersCapability(BaseCapability):
         streamer = get_streamer("otter", "extract_run_filters", state)
 
         # Extract the query from task_objective
-        query = step.get('task_objective', '')
+        query = step.get("task_objective", "")
 
         logger.info(f"Extracting run filters from query: {query}")
         streamer.status("Analyzing query to extract filter criteria...")
@@ -201,7 +212,7 @@ class ExtractRunFiltersCapability(BaseCapability):
         extracted = await extract_filters_from_query(query)
 
         # Validate beamline if provided
-        valid_beamlines = {'cu_hxr', 'cu_sxr', 'sc_bsyd', 'sc_diag0', 'sc_sxr', 'sc_hxr', 'dev'}
+        valid_beamlines = {"cu_hxr", "cu_sxr", "sc_bsyd", "sc_diag0", "sc_sxr", "sc_hxr", "dev"}
         if extracted.beamline and extracted.beamline not in valid_beamlines:
             # Attempt to correct common mistakes
             beamline_lower = extracted.beamline.lower()
@@ -222,20 +233,19 @@ class ExtractRunFiltersCapability(BaseCapability):
             algorithm=extracted.algorithm,
             badger_environment=extracted.badger_environment,
             objective=extracted.objective,
-            sort_order=extracted.sort_order
+            sort_order=extracted.sort_order,
         )
 
         # Log extracted filters
         active_filters = filter_context.to_parameters()
         logger.info(f"Extracted filters: {active_filters}")
-        streamer.status(f"Extracted {len(active_filters)} filter(s): {', '.join(f'{k}={v}' for k, v in active_filters.items())}")
+        streamer.status(
+            f"Extracted {len(active_filters)} filter(s): {', '.join(f'{k}={v}' for k, v in active_filters.items())}"
+        )
 
         # Store context
         state_updates = StateManager.store_context(
-            state,
-            registry.context_types.RUN_QUERY_FILTERS,
-            step.get("context_key"),
-            filter_context
+            state, registry.context_types.RUN_QUERY_FILTERS, step.get("context_key"), filter_context
         )
 
         streamer.status("Filter extraction complete")
@@ -251,8 +261,8 @@ class ExtractRunFiltersCapability(BaseCapability):
                 user_message=f"Invalid filter values: {str(exc)}",
                 metadata={
                     "technical_details": str(exc),
-                    "resolution": "Check filter values and retry"
-                }
+                    "resolution": "Check filter values and retry",
+                },
             )
 
         else:
@@ -260,7 +270,7 @@ class ExtractRunFiltersCapability(BaseCapability):
             return ErrorClassification(
                 severity=ErrorSeverity.RETRIABLE,
                 user_message=f"Unexpected error in filter extraction: {exc}",
-                metadata={"technical_details": str(exc)}
+                metadata={"technical_details": str(exc)},
             )
 
     def _create_orchestrator_guide(self) -> Optional[OrchestratorGuide]:
@@ -274,10 +284,10 @@ class ExtractRunFiltersCapability(BaseCapability):
                 task_objective="Extract filters for: recent runs from lcls_ii environment",
                 expected_output=registry.context_types.RUN_QUERY_FILTERS,
                 success_criteria="Filters extracted with badger_environment=lcls_ii",
-                inputs=[]
+                inputs=[],
             ),
             scenario_description="User asks for runs from lcls_ii (a Badger environment)",
-            notes="Output: RUN_QUERY_FILTERS with badger_environment='lcls_ii', num_runs=10"
+            notes="Output: RUN_QUERY_FILTERS with badger_environment='lcls_ii', num_runs=10",
         )
 
         # Example 2: Beamline query
@@ -288,10 +298,10 @@ class ExtractRunFiltersCapability(BaseCapability):
                 task_objective="Extract filters for: 5 runs from cu_hxr beamline",
                 expected_output=registry.context_types.RUN_QUERY_FILTERS,
                 success_criteria="Filters extracted with beamline=cu_hxr, num_runs=5",
-                inputs=[]
+                inputs=[],
             ),
             scenario_description="User asks for runs from cu_hxr (a physical beamline)",
-            notes="Output: RUN_QUERY_FILTERS with beamline='cu_hxr', num_runs=5"
+            notes="Output: RUN_QUERY_FILTERS with beamline='cu_hxr', num_runs=5",
         )
 
         # Example 3: Complex query with multiple filters
@@ -302,14 +312,15 @@ class ExtractRunFiltersCapability(BaseCapability):
                 task_objective="Extract filters for: last 10 neldermead runs optimizing pulse_intensity_p80",
                 expected_output=registry.context_types.RUN_QUERY_FILTERS,
                 success_criteria="Filters extracted with algorithm, objective, and num_runs",
-                inputs=[]
+                inputs=[],
             ),
             scenario_description="User asks for runs with algorithm and objective filters",
-            notes="Output: RUN_QUERY_FILTERS with algorithm='neldermead', objective='pulse_intensity_p80', num_runs=10"
+            notes="Output: RUN_QUERY_FILTERS with algorithm='neldermead', objective='pulse_intensity_p80', num_runs=10",
         )
 
         return OrchestratorGuide(
-            instructions=textwrap.dedent(f"""
+            instructions=textwrap.dedent(
+                f"""
                 **When to plan "extract_run_filters" steps:**
                 - User query mentions run filtering criteria (beamlines, environments, algorithms, objectives)
                 - Query contains ambiguous terminology that needs disambiguation (e.g., "lcls_ii environment")
@@ -351,13 +362,10 @@ class ExtractRunFiltersCapability(BaseCapability):
                 - Typically comes before query_runs step
                 - Results feed into query_runs via inputs
                 - No input dependencies (works standalone)
-                """).strip(),
-            examples=[
-                environment_example,
-                beamline_example,
-                complex_example
-            ],
-            priority=2  # Should come early, before query_runs
+                """
+            ).strip(),
+            examples=[environment_example, beamline_example, complex_example],
+            priority=2,  # Should come early, before query_runs
         )
 
     def _create_classifier_guide(self) -> Optional[TaskClassifierGuide]:
@@ -369,28 +377,28 @@ class ExtractRunFiltersCapability(BaseCapability):
                 ClassifierExample(
                     query="Show me runs from lcls_ii environment",
                     result=True,
-                    reason="Query contains filter criteria that need parsing (environment name)"
+                    reason="Query contains filter criteria that need parsing (environment name)",
                 ),
                 ClassifierExample(
                     query="Find 10 neldermead runs from cu_hxr",
                     result=True,
-                    reason="Query contains multiple filter criteria (algorithm, beamline, count)"
+                    reason="Query contains multiple filter criteria (algorithm, beamline, count)",
                 ),
                 ClassifierExample(
                     query="Recent runs optimizing pulse_intensity_p80",
                     result=True,
-                    reason="Query contains filter criteria (objective, implicit count)"
+                    reason="Query contains filter criteria (objective, implicit count)",
                 ),
                 ClassifierExample(
                     query="What is Badger?",
                     result=False,
-                    reason="General question, not requesting filtered run search"
+                    reason="General question, not requesting filtered run search",
                 ),
                 ClassifierExample(
                     query="Analyze this run",
                     result=False,
-                    reason="Refers to existing run, not searching for runs with filters"
+                    reason="Refers to existing run, not searching for runs with filters",
                 ),
             ],
-            actions_if_true=ClassifierActions()
+            actions_if_true=ClassifierActions(),
         )
