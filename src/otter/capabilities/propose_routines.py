@@ -25,8 +25,8 @@ from framework.base.planning import PlannedStep
 from framework.state import AgentState, StateManager
 from framework.registry import get_registry
 from framework.context.context_manager import ContextManager
-from configs.logger import get_logger
-from configs.streaming import get_streamer
+from framework.utils.logger import get_logger
+from framework.utils.streaming import get_streamer
 
 logger = get_logger("otter", "propose_routines")
 registry = get_registry()

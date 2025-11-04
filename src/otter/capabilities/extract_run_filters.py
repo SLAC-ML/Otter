@@ -34,9 +34,9 @@ from otter.context_classes import RunQueryFilters
 
 # Model and configuration
 from framework.models import get_chat_completion
-from configs.config import get_model_config
-from configs.streaming import get_streamer
-from configs.logger import get_logger
+from framework.utils.config import get_model_config
+from framework.utils.streaming import get_streamer
+from framework.utils.logger import get_logger
 
 logger = get_logger("otter", "extract_run_filters")
 registry = get_registry()

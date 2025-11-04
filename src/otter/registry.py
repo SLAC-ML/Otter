@@ -6,11 +6,11 @@ All Otter-specific capabilities, context classes, and data sources are declared 
 """
 
 from framework.registry import (
+    extend_framework_registry,
     CapabilityRegistration,
     ContextClassRegistration,
     DataSourceRegistration,
     FrameworkPromptProviderRegistration,
-    RegistryConfig,
     RegistryConfigProvider,
 )
 
@@ -18,14 +18,17 @@ from framework.registry import (
 class OtterRegistryProvider(RegistryConfigProvider):
     """Registry provider for Otter application."""
 
-    def get_registry_config(self) -> RegistryConfig:
+    def get_registry_config(self):
         """
         Get Otter application registry configuration.
 
+        Uses extend_framework_registry() to automatically include framework
+        capabilities alongside Otter-specific components.
+
         Returns:
-            RegistryConfig: Registry configuration for Otter application
+            RegistryConfig: Complete registry with framework + Otter components
         """
-        return RegistryConfig(
+        return extend_framework_registry(
             # ====================
             # Capabilities
             # ====================
@@ -136,6 +139,7 @@ class OtterRegistryProvider(RegistryConfigProvider):
             # ====================
             # Framework Exclusions
             # ====================
-            # Not needed for Phase 1 - no conflicts with framework capabilities
-            framework_exclusions={},
+            # Optional: Use exclude_capabilities parameter to disable framework components
+            # Example: exclude_capabilities=["python"] to disable Python execution capability
+            # Currently no exclusions needed - Otter works alongside all framework capabilities
         )

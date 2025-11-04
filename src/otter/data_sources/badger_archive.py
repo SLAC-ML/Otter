@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Callable
 from datetime import datetime
 
+from framework.utils.config import get_config_value
+
 logger = logging.getLogger(__name__)
 
 
@@ -81,7 +83,7 @@ class BadgerArchiveDataSource:
 
     def __init__(
         self,
-        archive_root: str,
+        archive_root: Optional[str] = None,
         use_cache: bool = True,
         progress_callback: Optional[Callable[[int, int, str], None]] = None
     ):
@@ -89,13 +91,22 @@ class BadgerArchiveDataSource:
         Initialize data source with archive root path.
 
         Args:
-            archive_root: Path to archive root directory
+            archive_root: Path to archive root directory (if None, reads from config)
             use_cache: Whether to use cached index (default: True)
             progress_callback: Optional callback(current, total, path) for index building progress
 
         Raises:
             FileNotFoundError: If archive root doesn't exist
         """
+        # Get archive root from config if not provided
+        if archive_root is None:
+            archive_root = get_config_value("external_services.badger.archive_root")
+            if archive_root is None:
+                raise ValueError(
+                    "Badger archive root not configured. "
+                    "Set OTTER_BADGER_ARCHIVE environment variable or provide archive_root parameter."
+                )
+
         self.archive_root = Path(archive_root)
         if not self.archive_root.exists():
             raise FileNotFoundError(
