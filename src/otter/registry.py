@@ -11,6 +11,7 @@ from framework.registry import (
     ContextClassRegistration,
     DataSourceRegistration,
     FrameworkPromptProviderRegistration,
+    ProviderRegistration,
     RegistryConfigProvider,
 )
 
@@ -29,6 +30,16 @@ class OtterRegistryProvider(RegistryConfigProvider):
             RegistryConfig: Complete registry with framework + Otter components
         """
         return extend_framework_registry(
+            # ====================
+            # Providers
+            # ====================
+            # Custom LLM provider adapters for Otter
+            providers=[
+                ProviderRegistration(
+                    module_path="otter.providers.stanford",
+                    class_name="StanfordProviderAdapter",
+                )
+            ],
             # ====================
             # Capabilities
             # ====================
