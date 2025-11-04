@@ -282,24 +282,24 @@ api:
       api_key: ${STANFORD_API_KEY}
       base_url: https://aiapi-prod.stanford.edu/v1
       timeout: 30
-    cborg:
-      api_key: ${CBORG_API_KEY}
-      base_url: https://api.cborg.lbl.gov/v1
-      timeout: 30
-    openai:
-      api_key: ${OPENAI_API_KEY}
-      base_url: https://api.openai.com/v1
-    anthropic:
-      api_key: ${ANTHROPIC_API_KEY}
-      base_url: https://api.anthropic.com
-    google:
-      api_key: ${GOOGLE_API_KEY}
-      base_url: https://generativelanguage.googleapis.com/v1beta
-    ollama:
-      api_key: ollama
-      base_url: http://localhost:11434
-      host: localhost
-      port: 11434
+    # cborg:
+    #   api_key: ${CBORG_API_KEY}
+    #   base_url: https://api.cborg.lbl.gov/v1
+    #   timeout: 30
+    # openai:
+    #   api_key: ${OPENAI_API_KEY}
+    #   base_url: https://api.openai.com/v1
+    # anthropic:
+    #   api_key: ${ANTHROPIC_API_KEY}
+    #   base_url: https://api.anthropic.com
+    # google:
+    #   api_key: ${GOOGLE_API_KEY}
+    #   base_url: https://generativelanguage.googleapis.com/v1beta
+    # ollama:
+    #   api_key: ollama
+    #   base_url: http://localhost:11434
+    #   host: localhost
+    #   port: 11434
 
 # ============================================================
 # ENVIRONMENT VARIABLES
