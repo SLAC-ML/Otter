@@ -33,25 +33,18 @@ class StanfordProviderAdapter(BaseProvider):
     supports_proxy = True
     default_base_url = "https://aiapi-prod.stanford.edu/v1"
     default_model_id = "gpt-4o"
-    health_check_model_id = "gpt-4o-mini"  # Cheapest model for health checks
+    health_check_model_id = "gpt-4.omini"  # Cheapest OpenAI model for health checks
     available_models = [
         # Anthropic Claude models
         "claude-3-7-sonnet",
-        "claude-3-5-sonnet-20241022",
-        "claude-3-5-haiku-20241022",
         # OpenAI models
         "gpt-4o",
-        "gpt-4o-mini",
         "gpt-4.omini",
-        "o1",
-        "o1-mini",
         "o3-mini",
         # Google models
         "gemini-2.0-flash-001",
-        "gemini-2.0-flash-thinking-exp-01-21",
         # DeepSeek models
         "deepseek-r1",
-        "deepseek-chat"
     ]
 
     def create_model(
