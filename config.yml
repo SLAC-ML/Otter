@@ -278,9 +278,14 @@ logging:
 
 api:
   providers:
+    stanford:
+      api_key: ${STANFORD_API_KEY}
+      base_url: https://aiapi-prod.stanford.edu/v1
+      timeout: 30
     cborg:
       api_key: ${CBORG_API_KEY}
       base_url: https://api.cborg.lbl.gov/v1
+      timeout: 30
     openai:
       api_key: ${OPENAI_API_KEY}
       base_url: https://api.openai.com/v1
@@ -301,6 +306,7 @@ api:
 # ============================================================
 # Set these in your .env file:
 #
+#   STANFORD_API_KEY=your-stanford-key
 #   CBORG_API_KEY=your-cborg-key
 #   OPENAI_API_KEY=sk-...
 #   ANTHROPIC_API_KEY=sk-ant-...
@@ -308,3 +314,31 @@ api:
 #   PROJECT_ROOT=/Users/zhezhang/Agentic/otter
 #   LOCAL_PYTHON_VENV=/path/to/venv/bin/python
 #   TZ=America/Los_Angeles
+#   BADGER_REPO_PATH=/path/to/badger/repo
+#   OTTER_BADGER_ARCHIVE=/path/to/badger/archive
+
+# ============================================================
+# OTTER APPLICATION CONFIGURATION
+# ============================================================
+
+# External Services
+external_services:
+  badger:
+    # Path to Badger repository (for loading utilities if needed)
+    repo_path: ${BADGER_REPO_PATH}
+    # Archive root directory containing all historical runs
+    archive_root: ${OTTER_BADGER_ARCHIVE}
+
+# Deployment Configuration (for containerized environments)
+deployment:
+  volumes:
+    # Mount Badger archive directory for run queries
+    - source: ${OTTER_BADGER_ARCHIVE}
+      target: ${OTTER_BADGER_ARCHIVE}  # Use same path in container for compatibility
+      read_only: true                   # Archive is read-only
+
+# Otter-specific logging colors (for capability output)
+otter_logging_colors:
+  query_runs: "chartreuse3"
+  analyze_runs: "dark_sea_green3"
+  extract_run_filters: "medium_spring_green"
