@@ -75,7 +75,7 @@ class ProposeRoutinesCapability(BaseCapability):
         """Execute routine proposal generation from analysis."""
 
         step = StateManager.get_current_step(state)
-        streamer = get_streamer("otter", "propose_routines", state)
+        streamer = get_streamer("propose_routines", state)
 
         try:
             # Get context manager and parameters

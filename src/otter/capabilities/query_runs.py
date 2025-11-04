@@ -92,7 +92,7 @@ class QueryRunsCapability(BaseCapability):
         """Execute run query with structured filters from RUN_QUERY_FILTERS context."""
 
         step = StateManager.get_current_step(state)
-        streamer = get_streamer("otter", "query_runs", state)
+        streamer = get_streamer("query_runs", state)
 
         try:
             # Extract required RUN_QUERY_FILTERS context using ContextManager
@@ -141,8 +141,8 @@ class QueryRunsCapability(BaseCapability):
                 streamer.status("Querying runs (no filters specified)")
 
             # Load archive root from config
-            # Config path: otter.external_services.badger.archive_root
-            archive_root = get_config_value("otter.external_services.badger.archive_root")
+            # Config path: external_services.badger.archive_root
+            archive_root = get_config_value("external_services.badger.archive_root")
             if not archive_root:
                 raise ArchiveAccessError(
                     "Archive root not configured. Please set OTTER_BADGER_ARCHIVE environment variable."

@@ -200,7 +200,7 @@ class ExtractRunFiltersCapability(BaseCapability):
         The task_objective should contain the natural language query to parse.
         """
         step = StateManager.get_current_step(state)
-        streamer = get_streamer("otter", "extract_run_filters", state)
+        streamer = get_streamer("extract_run_filters", state)
 
         # Extract the query from task_objective
         query = step.get("task_objective", "")

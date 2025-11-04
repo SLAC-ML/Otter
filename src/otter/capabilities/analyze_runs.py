@@ -85,7 +85,7 @@ class AnalyzeRunsCapability(BaseCapability):
         """Execute run analysis."""
 
         step = StateManager.get_current_step(state)
-        streamer = get_streamer("otter", "analyze_runs", state)
+        streamer = get_streamer("analyze_runs", state)
 
         try:
             # Get context manager to retrieve BADGER_RUNS container
