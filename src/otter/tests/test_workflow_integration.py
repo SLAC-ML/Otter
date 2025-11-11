@@ -22,7 +22,7 @@ load_dotenv()
 
 # Mock the streaming module before importing capabilities
 from unittest.mock import MagicMock, patch
-import configs.streaming as streaming_module
+from osprey.utils import streaming as streaming_module
 
 
 # Create a mock streamer that doesn't require LangGraph context
