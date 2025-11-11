@@ -5,7 +5,7 @@ This module defines the component registry for the Otter Badger optimization run
 All Otter-specific capabilities, context classes, and data sources are declared here.
 """
 
-from framework.registry import (
+from osprey.registry import (
     extend_framework_registry,
     CapabilityRegistration,
     ContextClassRegistration,

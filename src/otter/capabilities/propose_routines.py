@@ -11,22 +11,22 @@ from typing import Dict, Any, Optional
 from collections import Counter
 
 # Framework imports
-from framework.base.decorators import capability_node
-from framework.base.capability import BaseCapability
-from framework.base.errors import ErrorClassification, ErrorSeverity
-from framework.base.examples import (
+from osprey.base.decorators import capability_node
+from osprey.base.capability import BaseCapability
+from osprey.base.errors import ErrorClassification, ErrorSeverity
+from osprey.base.examples import (
     OrchestratorGuide,
     OrchestratorExample,
     TaskClassifierGuide,
     ClassifierExample,
     ClassifierActions,
 )
-from framework.base.planning import PlannedStep
-from framework.state import AgentState, StateManager
-from framework.registry import get_registry
-from framework.context.context_manager import ContextManager
-from framework.utils.logger import get_logger
-from framework.utils.streaming import get_streamer
+from osprey.base.planning import PlannedStep
+from osprey.state import AgentState, StateManager
+from osprey.registry import get_registry
+from osprey.context.context_manager import ContextManager
+from osprey.utils.logger import get_logger
+from osprey.utils.streaming import get_streamer
 
 logger = get_logger("otter", "propose_routines")
 registry = get_registry()

@@ -9,7 +9,7 @@ from pydantic import Field
 from typing import Dict, Any, List, Optional, ClassVar
 from datetime import datetime
 
-from framework.context.base import CapabilityContext
+from osprey.context.base import CapabilityContext
 
 
 class BadgerRunContext(CapabilityContext):
@@ -35,9 +35,7 @@ class BadgerRunContext(CapabilityContext):
     run_name: str = Field(
         description="Human-readable run name (e.g., 'cobalt-boar', 'emerald-fox')"
     )
-    timestamp: datetime = Field(
-        description="Run execution timestamp"
-    )
+    timestamp: datetime = Field(description="Run execution timestamp")
 
     # ====================
     # Configuration
@@ -58,52 +56,44 @@ class BadgerRunContext(CapabilityContext):
     # ====================
     variables: List[Dict[str, List[float]]] = Field(
         description="List of variables with their ranges. Each dict has variable name as key and [min, max] as value. "
-                    "Example: [{'QUAD:LTUH:620:BCTRL': [-46.23, -41.83]}, {'QUAD:LTUH:640:BCTRL': [47.68, 52.69]}]. "
-                    "Order is preserved (Python 3.7+ dict ordering)."
+        "Example: [{'QUAD:LTUH:620:BCTRL': [-46.23, -41.83]}, {'QUAD:LTUH:640:BCTRL': [47.68, 52.69]}]. "
+        "Order is preserved (Python 3.7+ dict ordering)."
     )
     objectives: List[Dict[str, str]] = Field(
         description="List of objectives with their optimization directions. Each dict has objective name as key and 'MAXIMIZE' or 'MINIMIZE' as value. "
-                    "Example: [{'pulse_intensity_p80': 'MAXIMIZE'}]. "
-                    "Order is preserved (Python 3.7+ dict ordering)."
+        "Example: [{'pulse_intensity_p80': 'MAXIMIZE'}]. "
+        "Order is preserved (Python 3.7+ dict ordering)."
     )
     constraints: List[Dict[str, Any]] = Field(
         default_factory=list,
-        description="List of constraints (empty if no constraints). Structure matches Badger VOCS format."
+        description="List of constraints (empty if no constraints). Structure matches Badger VOCS format.",
     )
 
     # ====================
     # Results Summary
     # ====================
-    num_evaluations: int = Field(
-        description="Number of evaluations performed during the run"
-    )
+    num_evaluations: int = Field(description="Number of evaluations performed during the run")
     initial_objective_values: Optional[Dict[str, float]] = Field(
-        default=None,
-        description="Initial values of objectives at start of run"
+        default=None, description="Initial values of objectives at start of run"
     )
     min_objective_values: Optional[Dict[str, float]] = Field(
         default=None,
-        description="Minimum values achieved for each objective across all evaluations"
+        description="Minimum values achieved for each objective across all evaluations",
     )
     max_objective_values: Optional[Dict[str, float]] = Field(
         default=None,
-        description="Maximum values achieved for each objective across all evaluations"
+        description="Maximum values achieved for each objective across all evaluations",
     )
     final_objective_values: Optional[Dict[str, float]] = Field(
-        default=None,
-        description="Final values of objectives at end of run"
+        default=None, description="Final values of objectives at end of run"
     )
 
     # ====================
     # Optional Metadata
     # ====================
-    description: Optional[str] = Field(
-        default="",
-        description="User-provided run description"
-    )
+    description: Optional[str] = Field(default="", description="User-provided run description")
     tags: Optional[List[str]] = Field(
-        default=None,
-        description="User-provided tags for categorization"
+        default=None, description="User-provided tags for categorization"
     )
 
     def _get_variable_names(self) -> List[str]:
@@ -119,7 +109,7 @@ class BadgerRunContext(CapabilityContext):
         for obj_dict in self.objectives:
             if obj_name in obj_dict:
                 return obj_dict[obj_name]
-        return 'MAXIMIZE'  # Default
+        return "MAXIMIZE"  # Default
 
     def get_access_details(self, key_name: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -144,8 +134,12 @@ class BadgerRunContext(CapabilityContext):
                     direction = self._get_objective_direction(obj)
 
                     # Get min/max if available
-                    min_val = self.min_objective_values.get(obj) if self.min_objective_values else None
-                    max_val = self.max_objective_values.get(obj) if self.max_objective_values else None
+                    min_val = (
+                        self.min_objective_values.get(obj) if self.min_objective_values else None
+                    )
+                    max_val = (
+                        self.max_objective_values.get(obj) if self.max_objective_values else None
+                    )
 
                     obj_info = {
                         "initial": initial,
@@ -160,16 +154,24 @@ class BadgerRunContext(CapabilityContext):
 
                     # Calculate improvement based on direction
                     if initial != 0:
-                        if direction == 'MAXIMIZE':
+                        if direction == "MAXIMIZE":
                             # For maximization: positive change is improvement
                             final_improvement = ((final - initial) / abs(initial)) * 100
-                            best_improvement = ((max_val - initial) / abs(initial)) * 100 if max_val is not None else final_improvement
+                            best_improvement = (
+                                ((max_val - initial) / abs(initial)) * 100
+                                if max_val is not None
+                                else final_improvement
+                            )
                             obj_info["final_improvement_pct"] = final_improvement
                             obj_info["best_improvement_pct"] = best_improvement
                         else:  # MINIMIZE
                             # For minimization: negative change is improvement (lower is better)
                             final_improvement = ((initial - final) / abs(initial)) * 100
-                            best_improvement = ((initial - min_val) / abs(initial)) * 100 if min_val is not None else final_improvement
+                            best_improvement = (
+                                ((initial - min_val) / abs(initial)) * 100
+                                if min_val is not None
+                                else final_improvement
+                            )
                             obj_info["final_improvement_pct"] = final_improvement
                             obj_info["best_improvement_pct"] = best_improvement
 
@@ -196,7 +198,9 @@ class BadgerRunContext(CapabilityContext):
             },
             "results_summary": {
                 "num_evaluations": self.num_evaluations,
-                "improvement": improvement_info if improvement_info else "Initial/final values not available",
+                "improvement": (
+                    improvement_info if improvement_info else "Initial/final values not available"
+                ),
             },
             "CRITICAL_ACCESS_PATTERNS": {
                 "get_algorithm": f"context.{self.CONTEXT_TYPE}.{key_ref}.algorithm",
@@ -208,7 +212,7 @@ class BadgerRunContext(CapabilityContext):
                 "get_badger_environment": f"context.{self.CONTEXT_TYPE}.{key_ref}.badger_environment",
             },
             "example_usage": f"context.{self.CONTEXT_TYPE}.{key_ref}.algorithm gives '{self.algorithm}', "
-                            f"context.{self.CONTEXT_TYPE}.{key_ref}.variables gives {self.variables[:min(2, len(self.variables))]}...",
+            f"context.{self.CONTEXT_TYPE}.{key_ref}.variables gives {self.variables[:min(2, len(self.variables))]}...",
             "IMPORTANT_NOTES": [
                 "Full evaluation data is NOT included in this context (too large - can be 100+ MB)",
                 "Only metadata and summary statistics are available",
@@ -218,7 +222,7 @@ class BadgerRunContext(CapabilityContext):
                 "Objectives are List[Dict[str, str]] - each dict has obj_name: 'MAXIMIZE' or 'MINIMIZE'",
                 "Order is preserved in variables and objectives (Python 3.7+ dict ordering)",
             ],
-            "datetime_features": "Full datetime functionality: arithmetic, comparison, formatting with .strftime(), timezone operations"
+            "datetime_features": "Full datetime functionality: arithmetic, comparison, formatting with .strftime(), timezone operations",
         }
 
     def get_summary(self, key_name: Optional[str] = None) -> Dict[str, Any]:
@@ -239,14 +243,22 @@ class BadgerRunContext(CapabilityContext):
                     direction = self._get_objective_direction(obj)
 
                     # Get min/max if available
-                    min_val = self.min_objective_values.get(obj) if self.min_objective_values else None
-                    max_val = self.max_objective_values.get(obj) if self.max_objective_values else None
+                    min_val = (
+                        self.min_objective_values.get(obj) if self.min_objective_values else None
+                    )
+                    max_val = (
+                        self.max_objective_values.get(obj) if self.max_objective_values else None
+                    )
 
                     if initial != 0:
-                        if direction == 'MAXIMIZE':
+                        if direction == "MAXIMIZE":
                             # For maximization: higher is better
                             final_improvement = ((final - initial) / abs(initial)) * 100
-                            best_improvement = ((max_val - initial) / abs(initial)) * 100 if max_val is not None else final_improvement
+                            best_improvement = (
+                                ((max_val - initial) / abs(initial)) * 100
+                                if max_val is not None
+                                else final_improvement
+                            )
                             best_val = max_val if max_val is not None else final
 
                             improvement_label = "improved" if final_improvement > 0 else "decreased"
@@ -257,7 +269,11 @@ class BadgerRunContext(CapabilityContext):
                         else:  # MINIMIZE
                             # For minimization: lower is better
                             final_improvement = ((initial - final) / abs(initial)) * 100
-                            best_improvement = ((initial - min_val) / abs(initial)) * 100 if min_val is not None else final_improvement
+                            best_improvement = (
+                                ((initial - min_val) / abs(initial)) * 100
+                                if min_val is not None
+                                else final_improvement
+                            )
                             best_val = min_val if min_val is not None else final
 
                             improvement_label = "improved" if final_improvement > 0 else "worsened"
@@ -284,7 +300,9 @@ class BadgerRunContext(CapabilityContext):
             },
             "execution": {
                 "num_evaluations": self.num_evaluations,
-                "improvement": improvement_summary if improvement_summary else "No improvement data available",
+                "improvement": (
+                    improvement_summary if improvement_summary else "No improvement data available"
+                ),
             },
         }
 
@@ -308,9 +326,7 @@ class BadgerRunsContext(CapabilityContext):
     CONTEXT_TYPE: ClassVar[str] = "BADGER_RUNS"
     CONTEXT_CATEGORY: ClassVar[str] = "OPTIMIZATION_DATA"
 
-    runs: list[BadgerRunContext] = Field(
-        description="List of Badger run contexts"
-    )
+    runs: list[BadgerRunContext] = Field(description="List of Badger run contexts")
 
     @property
     def run_count(self) -> int:
@@ -339,14 +355,14 @@ class BadgerRunsContext(CapabilityContext):
             "data_structure": "List[BadgerRunContext] - access individual runs via indexing",
             "access_pattern": f"context.{self.CONTEXT_TYPE}.{key_ref}.runs[index]",
             "example_usage": f"context.{self.CONTEXT_TYPE}.{key_ref}.runs[0].algorithm gives first run's algorithm, "
-                           f"context.{self.CONTEXT_TYPE}.{key_ref}.run_count gives total number of runs",
+            f"context.{self.CONTEXT_TYPE}.{key_ref}.run_count gives total number of runs",
             "iteration": f"Use 'for run in context.{self.CONTEXT_TYPE}.{key_ref}.runs' to iterate over all runs",
             "IMPORTANT_NOTES": [
                 "This is a container holding multiple BadgerRunContext objects",
                 "Access individual runs via .runs[index] - zero-indexed",
                 "Each run has full metadata: algorithm, variables, objectives, etc.",
                 "Use .run_count property to get total number of runs",
-            ]
+            ],
         }
 
     def get_summary(self, key_name: Optional[str] = None) -> Dict[str, Any]:
@@ -379,7 +395,7 @@ class RunAnalysisContext(CapabilityContext):
 
     analysis_data: Dict[str, Any] = Field(
         description="Complete analysis results including algorithm performance, beamline distribution, "
-                    "objective analysis, and success patterns"
+        "objective analysis, and success patterns"
     )
 
     def get_access_details(self, key_name: Optional[str] = None) -> Dict[str, Any]:
@@ -394,16 +410,16 @@ class RunAnalysisContext(CapabilityContext):
             "total_runs_analyzed": total_runs,
             "available_sections": list(self.analysis_data.keys()),
             "data_structure": "Dictionary with sections: overview, algorithm_performance, beamline_distribution, "
-                            "badger_environment_distribution, objective_analysis, success_patterns",
+            "badger_environment_distribution, objective_analysis, success_patterns",
             "access_pattern": f"context.{self.CONTEXT_TYPE}.{key_ref}.analysis_data['section_name']",
             "example_usage": f"context.{self.CONTEXT_TYPE}.{key_ref}.analysis_data['algorithm_performance'] gives algorithm stats, "
-                           f"context.{self.CONTEXT_TYPE}.{key_ref}.analysis_data['success_patterns']['top_performers'] gives best runs",
+            f"context.{self.CONTEXT_TYPE}.{key_ref}.analysis_data['success_patterns']['top_performers'] gives best runs",
             "IMPORTANT_NOTES": [
                 "All analysis data is in .analysis_data dictionary",
                 "Use bracket notation for accessing sections",
                 "Success patterns include top performers with improvement percentages",
-                "Algorithm performance includes average improvement and evaluation counts"
-            ]
+                "Algorithm performance includes average improvement and evaluation counts",
+            ],
         }
 
     def get_summary(self, key_name: Optional[str] = None) -> Dict[str, Any]:
@@ -420,7 +436,7 @@ class RunAnalysisContext(CapabilityContext):
         for algo, stats in algo_perf.items():
             algo_summary[algo] = {
                 "runs": stats.get("num_runs", 0),
-                "avg_improvement": f"{stats.get('avg_improvement_pct', 0):.1f}%"
+                "avg_improvement": f"{stats.get('avg_improvement_pct', 0):.1f}%",
             }
 
         # Format top performers
@@ -432,7 +448,7 @@ class RunAnalysisContext(CapabilityContext):
             "algorithm_summary": algo_summary,
             "top_performers": top_performers,
             "per_run_details": per_run_details,  # Include full per-run data for table formatting
-            "available_sections": list(self.analysis_data.keys())
+            "available_sections": list(self.analysis_data.keys()),
         }
 
 
@@ -466,20 +482,20 @@ class RoutineProposalContext(CapabilityContext):
             "num_proposals": num_proposals,
             "available_fields": list(self.proposal_data.keys()),
             "data_structure": "Dictionary with: num_proposals (int), proposals (list of dicts), "
-                            "generation_context (dict), usage_notes (list)",
+            "generation_context (dict), usage_notes (list)",
             "proposal_structure": "Each proposal has: proposal_name, algorithm, beamline, badger_environment, "
-                                "estimated_evaluations, objectives (list), variables (list), "
-                                "justification, confidence, reference_runs (list)",
+            "estimated_evaluations, objectives (list), variables (list), "
+            "justification, confidence, reference_runs (list)",
             "access_pattern": f"context.{self.CONTEXT_TYPE}.{key_ref}.proposal_data['proposals'][0]['algorithm']",
             "example_usage": f"context.{self.CONTEXT_TYPE}.{key_ref}.proposal_data['proposals'][0] gives first proposal, "
-                           f"context.{self.CONTEXT_TYPE}.{key_ref}.proposal_data['generation_context'] gives analysis context",
+            f"context.{self.CONTEXT_TYPE}.{key_ref}.proposal_data['generation_context'] gives analysis context",
             "IMPORTANT_NOTES": [
                 "All proposal data is in .proposal_data dictionary",
                 "proposals is a list - use indexing to access individual proposals",
                 "Each proposal includes justification and confidence level",
                 "generation_context provides information about how proposals were generated",
-                "reference_runs lists the successful runs each proposal is based on"
-            ]
+                "reference_runs lists the successful runs each proposal is based on",
+            ],
         }
 
     def get_summary(self, key_name: Optional[str] = None) -> Dict[str, Any]:
@@ -493,16 +509,18 @@ class RoutineProposalContext(CapabilityContext):
         # Summarize each proposal
         proposal_summaries = []
         for proposal in proposals:
-            proposal_summaries.append({
-                "name": proposal.get("proposal_name", "Unknown"),
-                "algorithm": proposal.get("algorithm", "Unknown"),
-                "beamline": proposal.get("beamline", "Unknown"),
-                "environment": proposal.get("badger_environment", "Unknown"),
-                "evaluations": proposal.get("estimated_evaluations", 0),
-                "confidence": proposal.get("confidence", "unknown"),
-                "num_objectives": len(proposal.get("objectives", [])),
-                "num_variables": len(proposal.get("variables", []))
-            })
+            proposal_summaries.append(
+                {
+                    "name": proposal.get("proposal_name", "Unknown"),
+                    "algorithm": proposal.get("algorithm", "Unknown"),
+                    "beamline": proposal.get("beamline", "Unknown"),
+                    "environment": proposal.get("badger_environment", "Unknown"),
+                    "evaluations": proposal.get("estimated_evaluations", 0),
+                    "confidence": proposal.get("confidence", "unknown"),
+                    "num_objectives": len(proposal.get("objectives", [])),
+                    "num_variables": len(proposal.get("variables", [])),
+                }
+            )
 
         return {
             "type": "Routine Proposals",
@@ -510,8 +528,8 @@ class RoutineProposalContext(CapabilityContext):
             "proposals": proposal_summaries,
             "generation_summary": {
                 "total_runs_analyzed": gen_context.get("total_runs_analyzed", 0),
-                "successful_runs_used": gen_context.get("successful_runs_used", 0)
-            }
+                "successful_runs_used": gen_context.get("successful_runs_used", 0),
+            },
         }
 
 
@@ -528,28 +546,26 @@ class RunQueryFilters(CapabilityContext):
     CONTEXT_CATEGORY: ClassVar[str] = "METADATA"
 
     num_runs: Optional[int] = Field(
-        default=None,
-        description="Number of runs to retrieve (None = use default)"
+        default=None, description="Number of runs to retrieve (None = use default)"
     )
     beamline: Optional[str] = Field(
         default=None,
-        description="Beamline directory filter - ONLY these 7 values: cu_hxr, cu_sxr, sc_bsyd, sc_diag0, sc_sxr, sc_hxr, dev"
+        description="Beamline directory filter - ONLY these 7 values: cu_hxr, cu_sxr, sc_bsyd, sc_diag0, sc_sxr, sc_hxr, dev",
     )
     algorithm: Optional[str] = Field(
         default=None,
-        description="Optimization algorithm filter (e.g., 'expected_improvement', 'neldermead', 'mobo', 'rcds')"
+        description="Optimization algorithm filter (e.g., 'expected_improvement', 'neldermead', 'mobo', 'rcds')",
     )
     badger_environment: Optional[str] = Field(
         default=None,
-        description="Badger software environment filter (e.g., 'lcls', 'lcls_ii', 'sphere')"
+        description="Badger software environment filter (e.g., 'lcls', 'lcls_ii', 'sphere')",
     )
     objective: Optional[str] = Field(
-        default=None,
-        description="Objective function name filter (e.g., 'pulse_intensity_p80')"
+        default=None, description="Objective function name filter (e.g., 'pulse_intensity_p80')"
     )
     sort_order: Optional[str] = Field(
         default="newest_first",
-        description="Sort order for results - 'newest_first' (default) or 'oldest_first'"
+        description="Sort order for results - 'newest_first' (default) or 'oldest_first'",
     )
 
     def to_parameters(self) -> Dict[str, Any]:
@@ -589,8 +605,8 @@ class RunQueryFilters(CapabilityContext):
                 "Use .to_parameters() method to get filter dict for query_runs",
                 "Only beamlines: cu_hxr, cu_sxr, sc_bsyd, sc_diag0, sc_sxr, sc_hxr, dev",
                 "Badger environments are separate from beamlines (e.g., 'lcls_ii' is environment, not beamline)",
-                "sort_order can be 'newest_first' (default) or 'oldest_first'"
-            ]
+                "sort_order can be 'newest_first' (default) or 'oldest_first'",
+            ],
         }
 
     def get_summary(self, key_name: Optional[str] = None) -> Dict[str, Any]:
@@ -600,5 +616,5 @@ class RunQueryFilters(CapabilityContext):
         return {
             "type": "Run Query Filters",
             "filters": active_filters,
-            "filter_count": len(active_filters)
+            "filter_count": len(active_filters),
         }

@@ -12,22 +12,22 @@ from typing import Dict, Any, Optional
 from pathlib import Path
 
 # Framework imports
-from framework.base.decorators import capability_node
-from framework.base.capability import BaseCapability
-from framework.base.errors import ErrorClassification, ErrorSeverity
-from framework.base.examples import (
+from osprey.base.decorators import capability_node
+from osprey.base.capability import BaseCapability
+from osprey.base.errors import ErrorClassification, ErrorSeverity
+from osprey.base.examples import (
     OrchestratorGuide,
     OrchestratorExample,
     TaskClassifierGuide,
     ClassifierExample,
     ClassifierActions,
 )
-from framework.base.planning import PlannedStep
-from framework.state import AgentState, StateManager
-from framework.registry import get_registry
-from framework.utils.logger import get_logger
-from framework.utils.streaming import get_streamer
-from framework.utils.config import get_config_value
+from osprey.base.planning import PlannedStep
+from osprey.state import AgentState, StateManager
+from osprey.registry import get_registry
+from osprey.utils.logger import get_logger
+from osprey.utils.streaming import get_streamer
+from osprey.utils.config import get_config_value
 
 # Application imports
 from otter.context_classes import BadgerRunContext, BadgerRunsContext
@@ -96,7 +96,7 @@ class QueryRunsCapability(BaseCapability):
 
         try:
             # Extract required RUN_QUERY_FILTERS context using ContextManager
-            from framework.context.context_manager import ContextManager
+            from osprey.context.context_manager import ContextManager
 
             context_manager = ContextManager(state)
 

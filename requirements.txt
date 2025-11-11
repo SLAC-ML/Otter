@@ -2,5 +2,4 @@
 # Add your application-specific dependencies here
 
 # Framework dependency
-alpha-berkeley-framework>=0.7.8
-
+osprey-framework>=0.8.0

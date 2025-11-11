@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from otter.capabilities.query_runs import QueryRunsCapability
-from framework.state import AgentState
+from osprey.state import AgentState
 
 
 async def test_capability_with_filter():
@@ -220,7 +220,7 @@ async def test_capability_with_time_range():
 
     from datetime import datetime
 
-    from framework.capabilities.time_range_parsing import TimeRangeContext
+    from osprey.capabilities.time_range_parsing import TimeRangeContext
 
     # Create a TIME_RANGE context for August 2025
     time_range_context = TimeRangeContext(

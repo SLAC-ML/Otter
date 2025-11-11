@@ -12,31 +12,31 @@ import asyncio
 import textwrap
 
 if TYPE_CHECKING:
-    from framework.state import AgentState
+    from osprey.state import AgentState
 
 # Framework imports
-from framework.base.decorators import capability_node
-from framework.base.capability import BaseCapability
-from framework.base.errors import ErrorClassification, ErrorSeverity
-from framework.base.planning import PlannedStep
-from framework.base.examples import (
+from osprey.base.decorators import capability_node
+from osprey.base.capability import BaseCapability
+from osprey.base.errors import ErrorClassification, ErrorSeverity
+from osprey.base.planning import PlannedStep
+from osprey.base.examples import (
     OrchestratorGuide,
     OrchestratorExample,
     TaskClassifierGuide,
     ClassifierExample,
     ClassifierActions,
 )
-from framework.state import StateManager
-from framework.registry import get_registry
+from osprey.state import StateManager
+from osprey.registry import get_registry
 
 # Application imports
 from otter.context_classes import RunQueryFilters
 
 # Model and configuration
-from framework.models import get_chat_completion
-from framework.utils.config import get_model_config
-from framework.utils.streaming import get_streamer
-from framework.utils.logger import get_logger
+from osprey.models import get_chat_completion
+from osprey.utils.config import get_model_config
+from osprey.utils.streaming import get_streamer
+from osprey.utils.logger import get_logger
 
 logger = get_logger("otter", "extract_run_filters")
 registry = get_registry()

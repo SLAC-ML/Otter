@@ -2,9 +2,9 @@
 
 from typing import Optional
 
-from framework.prompts.defaults.response_generation import DefaultResponseGenerationPromptBuilder
-from framework.base import OrchestratorGuide, OrchestratorExample, PlannedStep, TaskClassifierGuide
-from framework.registry import get_registry
+from osprey.prompts.defaults.response_generation import DefaultResponseGenerationPromptBuilder
+from osprey.base import OrchestratorGuide, OrchestratorExample, PlannedStep, TaskClassifierGuide
+from osprey.registry import get_registry
 
 
 class OtterResponseGenerationPromptBuilder(DefaultResponseGenerationPromptBuilder):
@@ -84,7 +84,7 @@ BO algorithms (expected_improvement, upper_confidence_bound, MOBO, etc.) explore
                 success_criteria="Complete response showing all requested runs from both beamlines",
                 inputs=[
                     {registry.context_types.BADGER_RUNS: "cu_hxr_runs"},
-                    {registry.context_types.BADGER_RUNS: "dev_runs"}
+                    {registry.context_types.BADGER_RUNS: "dev_runs"},
                 ],
             ),
             scenario_description="User asks for runs from multiple beamlines in one query",

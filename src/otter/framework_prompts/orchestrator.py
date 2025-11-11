@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from framework.prompts.defaults.orchestrator import DefaultOrchestratorPromptBuilder
+from osprey.prompts.defaults.orchestrator import DefaultOrchestratorPromptBuilder
 
 
 class OtterOrchestratorPromptBuilder(DefaultOrchestratorPromptBuilder):

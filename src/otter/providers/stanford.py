@@ -16,7 +16,7 @@ import logging
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider as PydanticOpenAIProvider
 
-from framework.models.providers.base import BaseProvider
+from osprey.models.providers.base import BaseProvider
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class StanfordProviderAdapter(BaseProvider):
         api_key: Optional[str],
         base_url: Optional[str],
         timeout: Optional[float],
-        http_client: Optional[httpx.AsyncClient]
+        http_client: Optional[httpx.AsyncClient],
     ) -> OpenAIModel:
         """Create Stanford AI model instance for PydanticAI.
 
@@ -71,19 +71,13 @@ class StanfordProviderAdapter(BaseProvider):
             base_url = self.default_base_url
 
         if http_client:
-            client_args = {
-                "api_key": api_key,
-                "http_client": http_client
-            }
+            client_args = {"api_key": api_key, "http_client": http_client}
             if base_url:
                 client_args["base_url"] = base_url
             openai_client = openai.AsyncOpenAI(**client_args)
         else:
             effective_timeout = timeout if timeout is not None else 60.0
-            client_args = {
-                "api_key": api_key,
-                "timeout": effective_timeout
-            }
+            client_args = {"api_key": api_key, "timeout": effective_timeout}
             if base_url:
                 client_args["base_url"] = base_url
             openai_client = openai.AsyncOpenAI(**client_args)
@@ -106,7 +100,7 @@ class StanfordProviderAdapter(BaseProvider):
         thinking: Optional[dict] = None,
         system_prompt: Optional[str] = None,
         output_format: Optional[Any] = None,
-        **kwargs
+        **kwargs,
     ) -> Union[str, Any]:
         """Execute Stanford AI chat completion.
 
@@ -174,7 +168,11 @@ class StanfordProviderAdapter(BaseProvider):
             error_str = str(e).lower()
             # Fall back to old API (max_tokens for older/proxy models)
             # Handles: direct OpenAI errors, LiteLLM/Azure routing errors
-            if "max_tokens" in error_str or "unsupported parameter" in error_str or "unrecognized request argument" in error_str:
+            if (
+                "max_tokens" in error_str
+                or "unsupported parameter" in error_str
+                or "unrecognized request argument" in error_str
+            ):
                 if output_format is not None:
                     response = client.beta.chat.completions.parse(
                         model=model_id,
@@ -198,7 +196,7 @@ class StanfordProviderAdapter(BaseProvider):
         if output_format is not None:
             result = response.choices[0].message.parsed
             # Handle TypedDict conversion
-            if is_typed_dict_output and hasattr(result, 'model_dump'):
+            if is_typed_dict_output and hasattr(result, "model_dump"):
                 return result.model_dump()
             return result
         else:
@@ -209,7 +207,7 @@ class StanfordProviderAdapter(BaseProvider):
         api_key: Optional[str],
         base_url: Optional[str],
         timeout: float = 5.0,
-        model_id: Optional[str] = None
+        model_id: Optional[str] = None,
     ) -> tuple[bool, str]:
         """Check Stanford AI API health.
 
@@ -247,18 +245,22 @@ class StanfordProviderAdapter(BaseProvider):
                     model=test_model,
                     messages=[{"role": "user", "content": "Hi"}],
                     max_completion_tokens=50,
-                    timeout=timeout
+                    timeout=timeout,
                 )
             except openai.BadRequestError as e:
                 error_str = str(e).lower()
                 # Fall back to old API (max_tokens for older/proxy models)
                 # Handles: direct OpenAI errors, LiteLLM/Azure routing errors
-                if "max_tokens" in error_str or "unsupported parameter" in error_str or "unrecognized request argument" in error_str:
+                if (
+                    "max_tokens" in error_str
+                    or "unsupported parameter" in error_str
+                    or "unrecognized request argument" in error_str
+                ):
                     response = client.chat.completions.create(
                         model=test_model,
                         messages=[{"role": "user", "content": "Hi"}],
                         max_tokens=50,
-                        timeout=timeout
+                        timeout=timeout,
                     )
                 else:
                     raise

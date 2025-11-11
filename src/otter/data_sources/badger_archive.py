@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Callable
 from datetime import datetime
 
-from framework.utils.config import get_config_value
+from osprey.utils.config import get_config_value
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +35,11 @@ def extract_timestamp_from_filename(filename: str) -> datetime | None:
     """
     try:
         # Remove .yaml extension
-        name_without_ext = filename.replace('.yaml', '')
+        name_without_ext = filename.replace(".yaml", "")
 
         # Split by '-' and get the last 4 parts (YYYY-MM-DD-HHMMSS)
         # Environment name can contain hyphens/underscores, so we count from the end
-        parts = name_without_ext.split('-')
+        parts = name_without_ext.split("-")
 
         if len(parts) < 5:  # At least env + YYYY + MM + DD + HHMMSS
             logger.warning(f"Filename doesn't match expected pattern: {filename}")
@@ -57,10 +57,7 @@ def extract_timestamp_from_filename(filename: str) -> datetime | None:
         second = time_str[4:6]
 
         # Create datetime object
-        timestamp = datetime(
-            int(year), int(month), int(day),
-            int(hour), int(minute), int(second)
-        )
+        timestamp = datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
 
         return timestamp
 
@@ -85,7 +82,7 @@ class BadgerArchiveDataSource:
         self,
         archive_root: Optional[str] = None,
         use_cache: bool = True,
-        progress_callback: Optional[Callable[[int, int, str], None]] = None
+        progress_callback: Optional[Callable[[int, int, str], None]] = None,
     ):
         """
         Initialize data source with archive root path.
@@ -115,9 +112,7 @@ class BadgerArchiveDataSource:
             )
 
         if not self.archive_root.is_dir():
-            raise NotADirectoryError(
-                f"Badger archive root is not a directory: {archive_root}"
-            )
+            raise NotADirectoryError(f"Badger archive root is not a directory: {archive_root}")
 
         logger.info(f"Initialized Badger archive data source: {self.archive_root}")
 
@@ -167,7 +162,7 @@ class BadgerArchiveDataSource:
         """Save index to cache file."""
         cache_path = self._get_cache_path()
         try:
-            with open(cache_path, 'w') as f:
+            with open(cache_path, "w") as f:
                 json.dump(index, f, indent=2)
             logger.info(f"Saved index cache to {cache_path} ({index['total_runs']} runs)")
         except Exception as e:
@@ -177,7 +172,7 @@ class BadgerArchiveDataSource:
         """Load index from cache file."""
         cache_path = self._get_cache_path()
         try:
-            with open(cache_path, 'r') as f:
+            with open(cache_path, "r") as f:
                 index = json.load(f)
             logger.info(f"Loaded index cache from {cache_path} ({index.get('total_runs', 0)} runs)")
             return index
@@ -188,7 +183,9 @@ class BadgerArchiveDataSource:
             logger.error(f"Failed to load cache: {e}")
             return None
 
-    def _build_index(self, progress_callback: Optional[Callable[[int, int, str], None]] = None) -> Dict[str, Any]:
+    def _build_index(
+        self, progress_callback: Optional[Callable[[int, int, str], None]] = None
+    ) -> Dict[str, Any]:
         """
         Build complete index with full metadata for all runs.
 
@@ -198,22 +195,18 @@ class BadgerArchiveDataSource:
         Returns:
             Index dict with metadata for all runs
         """
-        index = {
-            "version": "1.0",
-            "created_at": datetime.now().isoformat(),
-            "runs": []
-        }
+        index = {"version": "1.0", "created_at": datetime.now().isoformat(), "runs": []}
 
         # Collect all visible YAML files
         all_files = []
         for beamline_dir in self.archive_root.iterdir():
-            if not beamline_dir.is_dir() or beamline_dir.name.startswith('.'):
+            if not beamline_dir.is_dir() or beamline_dir.name.startswith("."):
                 continue
             for root, dirs, files in os.walk(beamline_dir):
                 # Filter out hidden directories
-                dirs[:] = [d for d in dirs if not d.startswith('.')]
+                dirs[:] = [d for d in dirs if not d.startswith(".")]
                 for filename in files:
-                    if filename.endswith('.yaml') and not filename.startswith('.'):
+                    if filename.endswith(".yaml") and not filename.startswith("."):
                         all_files.append(Path(root) / filename)
 
         total = len(all_files)
@@ -247,7 +240,7 @@ class BadgerArchiveDataSource:
                     "max_objective_values": metadata.get("max_values"),
                     "final_objective_values": metadata.get("final_values"),
                     "description": metadata.get("description", ""),
-                    "tags": metadata.get("tags")
+                    "tags": metadata.get("tags"),
                 }
 
                 index["runs"].append(serializable_metadata)
@@ -276,7 +269,7 @@ class BadgerArchiveDataSource:
         algorithm: Optional[str] = None,
         badger_environment: Optional[str] = None,
         objective: Optional[str] = None,
-        sort_order: str = "newest_first"
+        sort_order: str = "newest_first",
     ) -> List[str]:
         """
         List run filenames matching filters, sorted by run timestamp.
@@ -308,13 +301,14 @@ class BadgerArchiveDataSource:
 
         # Apply time range filter
         if time_range:
-            start_str = time_range.get('start')
-            end_str = time_range.get('end')
+            start_str = time_range.get("start")
+            end_str = time_range.get("end")
 
             matching_runs = [
-                r for r in matching_runs
-                if (not start_str or r["timestamp"] >= start_str) and
-                   (not end_str or r["timestamp"] <= end_str)
+                r
+                for r in matching_runs
+                if (not start_str or r["timestamp"] >= start_str)
+                and (not end_str or r["timestamp"] <= end_str)
             ]
 
         # Apply beamline filter
@@ -327,12 +321,15 @@ class BadgerArchiveDataSource:
 
         # Apply badger environment filter
         if badger_environment:
-            matching_runs = [r for r in matching_runs if r["badger_environment"] == badger_environment]
+            matching_runs = [
+                r for r in matching_runs if r["badger_environment"] == badger_environment
+            ]
 
         # Apply objective filter (check if objective exists in any of the objective dicts)
         if objective:
             matching_runs = [
-                r for r in matching_runs
+                r
+                for r in matching_runs
                 if any(objective in obj_dict for obj_dict in r["objectives"])
             ]
 
@@ -403,7 +400,7 @@ class BadgerArchiveDataSource:
                         "max_values": run.get("max_objective_values"),
                         "final_values": run.get("final_objective_values"),
                         "description": run.get("description", ""),
-                        "tags": run.get("tags")
+                        "tags": run.get("tags"),
                     }
 
         # Fallback: load from file if not in index
@@ -413,100 +410,114 @@ class BadgerArchiveDataSource:
             raise FileNotFoundError(f"Run file not found: {run_path}")
 
         try:
-            with open(full_path, 'r') as f:
+            with open(full_path, "r") as f:
                 run_data = yaml.safe_load(f)
 
             # Extract metadata (avoiding loading full data dict which can be huge)
             metadata = {
-                'name': run_data.get('name', 'Unknown'),
-                'badger_environment': run_data.get('environment', {}).get('name', 'Unknown'),
-                'algorithm': run_data.get('generator', {}).get('name', 'Unknown'),
-                'description': run_data.get('description', ''),
-                'tags': run_data.get('tags'),
+                "name": run_data.get("name", "Unknown"),
+                "badger_environment": run_data.get("environment", {}).get("name", "Unknown"),
+                "algorithm": run_data.get("generator", {}).get("name", "Unknown"),
+                "description": run_data.get("description", ""),
+                "tags": run_data.get("tags"),
             }
 
             # Extract beamline from directory path (first component)
             # Example: 'cu_hxr/2025/2025-10/2025-10-11/lcls-2025-10-11-200738.yaml' → 'cu_hxr'
-            beamline_name = Path(run_path).parts[0] if run_path else 'Unknown'
-            metadata['beamline'] = beamline_name
+            beamline_name = Path(run_path).parts[0] if run_path else "Unknown"
+            metadata["beamline"] = beamline_name
 
             # Get timestamp from filename (more reliable than mtime for copied/moved files)
             filename = Path(run_path).name
             file_timestamp = extract_timestamp_from_filename(filename)
             if file_timestamp:
-                metadata['timestamp'] = file_timestamp
+                metadata["timestamp"] = file_timestamp
             else:
                 # Fallback to mtime if filename parsing fails
                 logger.warning(f"Could not parse timestamp from filename {filename}, using mtime")
-                metadata['timestamp'] = datetime.fromtimestamp(full_path.stat().st_mtime)
+                metadata["timestamp"] = datetime.fromtimestamp(full_path.stat().st_mtime)
 
             # Extract VOCS information in Badger's native format
             # Variables: {name: [min, max]} → [{name: [min, max]}, ...]
             # Objectives: {name: direction} → [{name: direction}, ...]
-            vocs = run_data.get('vocs', {})
+            vocs = run_data.get("vocs", {})
 
-            variables_dict = vocs.get('variables', {})
-            metadata['variables'] = [{name: ranges} for name, ranges in variables_dict.items()]
+            variables_dict = vocs.get("variables", {})
+            metadata["variables"] = [{name: ranges} for name, ranges in variables_dict.items()]
 
-            objectives_dict = vocs.get('objectives', {})
-            metadata['objectives'] = [{name: direction} for name, direction in objectives_dict.items()]
+            objectives_dict = vocs.get("objectives", {})
+            metadata["objectives"] = [
+                {name: direction} for name, direction in objectives_dict.items()
+            ]
 
-            constraints_dict = vocs.get('constraints', {})
-            metadata['constraints'] = [{name: config} for name, config in constraints_dict.items()] if constraints_dict else []
+            constraints_dict = vocs.get("constraints", {})
+            metadata["constraints"] = (
+                [{name: config} for name, config in constraints_dict.items()]
+                if constraints_dict
+                else []
+            )
 
             # Extract data summary without loading full data dict
-            data = run_data.get('data', {})
+            data = run_data.get("data", {})
             if data:
                 # Count evaluations from one of the objective columns
                 # Get first objective name from list of dicts
-                objective_name = list(metadata['objectives'][0].keys())[0] if metadata['objectives'] else None
+                objective_name = (
+                    list(metadata["objectives"][0].keys())[0] if metadata["objectives"] else None
+                )
                 if objective_name and objective_name in data:
-                    metadata['num_evaluations'] = len(data[objective_name])
+                    metadata["num_evaluations"] = len(data[objective_name])
                 else:
                     # Fallback: count keys in data dict
                     first_key = next(iter(data.keys()), None)
-                    metadata['num_evaluations'] = len(data[first_key]) if first_key else 0
+                    metadata["num_evaluations"] = len(data[first_key]) if first_key else 0
 
                 # Try to extract objective statistics (init, min, max, last)
-                if metadata['objectives'] and metadata['num_evaluations'] > 0:
+                if metadata["objectives"] and metadata["num_evaluations"] > 0:
                     try:
-                        metadata['initial_values'] = {}
-                        metadata['min_values'] = {}
-                        metadata['max_values'] = {}
-                        metadata['final_values'] = {}
+                        metadata["initial_values"] = {}
+                        metadata["min_values"] = {}
+                        metadata["max_values"] = {}
+                        metadata["final_values"] = {}
 
                         # Extract objective names from list of dicts
-                        objective_names = [list(obj_dict.keys())[0] for obj_dict in metadata['objectives']]
+                        objective_names = [
+                            list(obj_dict.keys())[0] for obj_dict in metadata["objectives"]
+                        ]
 
                         for obj in objective_names:
                             if obj in data:
                                 # Get all objective values (keys are stringified indices)
                                 obj_data = data[obj]
-                                values = [obj_data[str(i)] for i in range(metadata['num_evaluations']) if str(i) in obj_data]
+                                values = [
+                                    obj_data[str(i)]
+                                    for i in range(metadata["num_evaluations"])
+                                    if str(i) in obj_data
+                                ]
 
                                 if values:
-                                    metadata['initial_values'][obj] = values[0]
+                                    metadata["initial_values"][obj] = values[0]
                                     # Filter out None values for min/max calculation
                                     numeric_values = [v for v in values if v is not None]
                                     if numeric_values:
-                                        metadata['min_values'][obj] = min(numeric_values)
-                                        metadata['max_values'][obj] = max(numeric_values)
+                                        metadata["min_values"][obj] = min(numeric_values)
+                                        metadata["max_values"][obj] = max(numeric_values)
                                     else:
-                                        metadata['min_values'][obj] = None
-                                        metadata['max_values'][obj] = None
-                                    metadata['final_values'][obj] = values[-1]
+                                        metadata["min_values"][obj] = None
+                                        metadata["max_values"][obj] = None
+                                    metadata["final_values"][obj] = values[-1]
                     except Exception as e:
                         logger.warning(f"Failed to extract objective values: {e}")
-                        metadata['initial_values'] = None
-                        metadata['min_values'] = None
-                        metadata['max_values'] = None
-                        metadata['final_values'] = None
+                        metadata["initial_values"] = None
+                        metadata["min_values"] = None
+                        metadata["max_values"] = None
+                        metadata["final_values"] = None
             else:
-                metadata['num_evaluations'] = 0
-                metadata['initial_values'] = None
-                metadata['min_values'] = None
-                metadata['max_values'] = None
-                metadata['final_values'] = None
+                metadata["num_evaluations"] = 0
+                metadata["initial_values"] = None
+                metadata["min_values"] = None
+                metadata["max_values"] = None
+                metadata["final_values"] = None
 
             return metadata
 
@@ -522,7 +533,7 @@ class BadgerArchiveDataSource:
         beamline: Optional[str] = None,
         algorithm: Optional[str] = None,
         badger_environment: Optional[str] = None,
-        objective: Optional[str] = None
+        objective: Optional[str] = None,
     ) -> Optional[str]:
         """
         Convenience method to get the most recent run filename.
@@ -541,6 +552,6 @@ class BadgerArchiveDataSource:
             beamline=beamline,
             algorithm=algorithm,
             badger_environment=badger_environment,
-            objective=objective
+            objective=objective,
         )
         return runs[0] if runs else None
