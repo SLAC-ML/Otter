@@ -36,7 +36,7 @@ def test_beamline_filter():
             print(f"  {i}. {run} ✓")
         else:
             print(f"  {i}. {run} ✗ (NOT from cu_hxr!)")
-            return False
+            assert False, f"Run {run} is NOT from cu_hxr beamline"
     print()
 
     # Test 2: Filter by non-existent beamline
@@ -47,7 +47,7 @@ def test_beamline_filter():
         print(f"✅ Correctly returned 0 runs for non-existent beamline")
     else:
         print(f"✗ Expected 0 runs, got {len(runs)}")
-        return False
+        assert False, f"Expected 0 runs for non-existent beamline, got {len(runs)}"
     print()
 
     # Test 3: No beamline filter (gets from all beamlines)
@@ -77,17 +77,15 @@ def test_beamline_filter():
             print(f"  ✅ Beamline field correctly extracted from path")
         else:
             print(f"  ✗ Expected beamline='cu_hxr', got '{metadata.get('beamline')}'")
-            return False
+            assert False, f"Expected beamline='cu_hxr', got '{metadata.get('beamline')}'"
     else:
         print("  ✗ No cu_hxr runs found")
-        return False
+        assert False, "No cu_hxr runs found in archive"
     print()
 
     print("=" * 80)
     print("✅ All beamline filter tests passed!")
     print("=" * 80)
-
-    return True
 
 
 if __name__ == "__main__":

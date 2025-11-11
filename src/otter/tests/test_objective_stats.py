@@ -29,7 +29,7 @@ def test_objective_stats():
     runs = ds.list_runs(limit=1)
     if not runs:
         print("❌ No runs found")
-        return False
+        assert False, "No runs found in archive"
 
     run_path = runs[0]
     print(f"Testing with run: {run_path}")
@@ -44,18 +44,18 @@ def test_objective_stats():
     for field in required_fields:
         if field not in metadata:
             print(f"❌ Missing field: {field}")
-            return False
+            assert False, f"Missing required field: {field}"
         print(f"✅ Field '{field}' present")
 
     # Check VOCS structure
     if "objectives" not in metadata or not isinstance(metadata["objectives"], list):
         print("❌ objectives field missing or not a list")
-        return False
+        assert False, "objectives field missing or not a list"
     print("✅ Field 'objectives' present (list format)")
 
     if "variables" not in metadata or not isinstance(metadata["variables"], list):
         print("❌ variables field missing or not a list")
-        return False
+        assert False, "variables field missing or not a list"
     print("✅ Field 'variables' present (list format)")
 
     print()
@@ -127,8 +127,6 @@ def test_objective_stats():
     print("=" * 80)
     print("✅ All objective statistics extracted successfully!")
     print("=" * 80)
-
-    return True
 
 
 if __name__ == "__main__":

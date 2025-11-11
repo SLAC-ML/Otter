@@ -41,16 +41,14 @@ def test_list_runs_with_limit():
         print(f"   Most recent: {runs[0]}")
     else:
         print(f"   ✗ Expected 1 run, got {len(runs)}")
-        return False
+        assert False, f"Expected 1 run, got {len(runs)}"
 
     # Check if it's a hidden file
     if "/.ipynb_checkpoints/" in runs[0] or runs[0].startswith("."):
         print(f"   ✗ ERROR: Returned hidden file: {runs[0]}")
-        return False
+        assert False, f"Returned hidden file: {runs[0]}"
     else:
         print(f"   ✓ Not a hidden file")
-
-    return True
 
 
 def test_list_runs_with_limit_5():
@@ -74,7 +72,7 @@ def test_list_runs_with_limit_5():
             print(f"   {i}. {Path(run).name}")
     else:
         print(f"   ✗ Expected 5 runs, got {len(runs)}")
-        return False
+        assert False, f"Expected 5 runs, got {len(runs)}"
 
     # Check if any are hidden files
     hidden_found = False
@@ -85,9 +83,8 @@ def test_list_runs_with_limit_5():
 
     if not hidden_found:
         print(f"   ✓ No hidden files in results")
-        return True
     else:
-        return False
+        assert False, f"Found hidden files in results"
 
 
 def test_no_limit():
@@ -114,7 +111,6 @@ def test_no_limit():
 
     if hidden_count == 0:
         print(f"   ✓ No hidden files found (good!)")
-        return True
     else:
         print(f"   ✗ ERROR: Found {hidden_count} hidden files")
         # Show first few examples
@@ -123,7 +119,7 @@ def test_no_limit():
         ][:3]
         for ex in hidden_examples:
             print(f"      Example: {ex}")
-        return False
+        assert False, f"Found {hidden_count} hidden files in results"
 
 
 def test_load_metadata():
@@ -139,7 +135,7 @@ def test_load_metadata():
     runs = data_source.list_runs(limit=1)
     if not runs:
         print("✗ No runs found")
-        return False
+        assert False, "No runs found in archive"
 
     run_path = runs[0]
     print(f"\nLoading metadata from: {run_path}")
@@ -156,14 +152,12 @@ def test_load_metadata():
         print(f"   Objectives: {len(metadata['objectives'])}")
         print(f"   Evaluations: {metadata['num_evaluations']}")
 
-        return True
-
     except Exception as e:
         print(f"\n✗ Failed to load metadata: {e}")
         import traceback
 
         traceback.print_exc()
-        return False
+        assert False, f"Failed to load metadata: {e}"
 
 
 def main():
