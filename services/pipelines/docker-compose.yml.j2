@@ -14,6 +14,12 @@ services:
       - ./pipelines:/pipelines
       - {{project_root}}/{{file_paths.agent_data_dir}}:/app/{{file_paths.agent_data_dir}}
       - {{project_root}}/../alpha_berkeley:/pipelines/framework_override
+      # Application-specific volumes (e.g., external data directories)
+      {% if application_volumes %}
+      {% for volume in application_volumes %}
+      - {{volume.source}}:{{volume.target}}{% if volume.read_only %}:ro{% endif %}
+      {% endfor %}
+      {% endif %}
     environment:
       # Tell pipelines where to find the scripts within the container
       # Pipeline interface files (main.py, __init__.py) are copied to /pipelines during init
