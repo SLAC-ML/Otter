@@ -286,6 +286,35 @@ When responding with RUN_ANALYSIS context that contains per_run_details:
 - ALWAYS use tables when presenting RUN_ANALYSIS with per_run_details
 - Tables make side-by-side comparison much easier than narrative text
 - Follow the table with a brief summary highlighting key insights (best performer, trends, etc.)
+
+**PRESENTING BADGER ROUTINES (YAML):**
+
+When responding with BADGER_ROUTINES context containing proposed routine YAML:
+- Display the RAW YAML content in a code block - operators need to review the actual configuration
+- Add brief introductory context (source run, algorithm, beamline)
+- Include simple instructions for saving and executing the routine
+- DO NOT summarize or paraphrase the YAML - show the complete content
+
+**Format for routine presentation:**
+
+"Generated Badger routine based on run '{source_run_name}' (algorithm: {algorithm}, beamline: {beamline}):
+
+```yaml
+[COMPLETE YAML CONTENT FROM routines[0].yaml_content]
+```
+
+**To use this routine:**
+1. Save the YAML to a file (e.g., `proposed_routine.yaml`)
+2. Review and adjust parameters as needed (especially environment params)
+3. Execute with Badger: `badger run -r proposed_routine.yaml`
+
+The routine is configured with safe defaults (relative_to_current: true, starts from current machine state)."
+
+**CRITICAL:**
+- Extract the YAML string from routines[0]["yaml_content"] in the context data
+- Display it in a ```yaml code block WITHOUT modification
+- Do NOT show just metadata - operators need the complete executable YAML
+- Keep the introduction brief - the YAML content is what matters
 """
 
         return base_instructions + bo_guidance

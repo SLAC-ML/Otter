@@ -533,6 +533,93 @@ class RoutineProposalContext(CapabilityContext):
         }
 
 
+class BadgerRoutinesContext(CapabilityContext):
+    """
+    Context for storing generated Badger routine YAML strings.
+
+    This context stores complete, executable Badger routine configurations
+    in YAML format, ready to be saved to file or executed in Badger.
+    Generated from successful optimization runs with complete VOCS specifications.
+    """
+
+    CONTEXT_TYPE: ClassVar[str] = "BADGER_ROUTINES"
+    CONTEXT_CATEGORY: ClassVar[str] = "COMPUTATIONAL_DATA"
+
+    routines: List[str] = Field(
+        description="List of Badger routine YAML strings, ready to save or execute"
+    )
+    generation_metadata: Dict[str, Any] = Field(
+        description="Metadata about routine generation (source runs, selection criteria, etc.)"
+    )
+
+    def get_access_details(self, key_name: Optional[str] = None) -> Dict[str, Any]:
+        """Rich description for LLM consumption."""
+        key_ref = key_name if key_name else "key_name"
+
+        num_routines = len(self.routines)
+        metadata = self.generation_metadata
+
+        return {
+            "num_routines": num_routines,
+            "data_structure": "List of YAML strings + generation metadata dict",
+            "routine_format": "Each string is a complete Badger routine in YAML format",
+            "metadata_fields": list(metadata.keys()),
+            "access_pattern": f"context.{self.CONTEXT_TYPE}.{key_ref}.routines[0] for first routine YAML string",
+            "example_usage": f"context.{self.CONTEXT_TYPE}.{key_ref}.routines gives list of all routine YAMLs, "
+            f"context.{self.CONTEXT_TYPE}.{key_ref}.generation_metadata gives generation info",
+            "IMPORTANT_NOTES": [
+                "routines is a list of YAML strings - each is a complete Badger routine",
+                "Each routine can be directly saved to .yaml file and executed in Badger",
+                "Routines include: name, environment, generator, VOCS (variables/objectives), initial_point_actions",
+                "generation_metadata provides info about source runs used to create routines",
+                "Routines are configured with safe defaults (relative_to_current, add_curr initial point)",
+            ],
+        }
+
+    def get_summary(self, key_name: Optional[str] = None) -> Dict[str, Any]:
+        """
+        FOR HUMAN DISPLAY: Create readable summary for UI/response generation.
+
+        Includes the actual YAML content so operators can review and execute the routines.
+        """
+        num_routines = len(self.routines)
+        metadata = self.generation_metadata
+
+        # Parse routines and include actual YAML content
+        routine_summaries = []
+        for i, routine_yaml in enumerate(self.routines):
+            try:
+                # Extract basic info from YAML for metadata
+                lines = routine_yaml.split('\n')
+                name_line = next((line for line in lines if line.startswith('name:')), '')
+                name = name_line.split(':', 1)[1].strip().strip('"\'') if name_line else f"routine_{i+1}"
+
+                routine_summaries.append({
+                    "index": i,
+                    "name": name,
+                    "yaml_content": routine_yaml,  # Include actual YAML string
+                    "yaml_lines": len(lines),
+                    "status": "ready_to_execute"
+                })
+            except Exception:
+                routine_summaries.append({
+                    "index": i,
+                    "name": f"routine_{i+1}",
+                    "yaml_content": routine_yaml,  # Include YAML even if parsing failed
+                    "status": "yaml_string"
+                })
+
+        return {
+            "type": "Badger Routines (YAML)",
+            "num_routines": num_routines,
+            "routines": routine_summaries,
+            "source_runs": metadata.get("source_runs", []),
+            "generation_method": metadata.get("method", "from_successful_runs"),
+            "algorithm": metadata.get("algorithm", ""),
+            "beamline": metadata.get("beamline", ""),
+        }
+
+
 class RunQueryFilters(CapabilityContext):
     """
     Context for structured run query filters extracted from natural language.

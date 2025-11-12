@@ -68,19 +68,14 @@ class OtterRegistryProvider(RegistryConfigProvider):
                     provides=["RUN_ANALYSIS"],
                     requires=["BADGER_RUNS"],  # Updated to use BADGER_RUNS container
                 ),
-                # TODO: propose_routines capability needs rework - disabled for now
-                # The current implementation doesn't properly generate actionable routines
-                # Will be re-enabled after rework with proper VOCS generation
-                # CapabilityRegistration(
-                #     name="propose_routines",
-                #     module_path=(
-                #         "otter.capabilities.propose_routines"
-                #     ),
-                #     class_name="ProposeRoutinesCapability",
-                #     description="Generate routine proposals from analysis",
-                #     provides=["ROUTINE_PROPOSAL"],
-                #     requires=["RUN_ANALYSIS"]
-                # ),
+                CapabilityRegistration(
+                    name="propose_routines",
+                    module_path="otter.capabilities.propose_routines",
+                    class_name="ProposeRoutinesCapability",
+                    description="Generate executable Badger routine YAML from successful runs",
+                    provides=["BADGER_ROUTINES"],
+                    requires=["BADGER_RUNS", "RUN_ANALYSIS"],  # Requires BOTH for complete VOCS + selection
+                ),
                 # Future capabilities:
                 # - search_runs: Find runs matching complex criteria (VOCS-based filtering)
                 # - infer_terminology: Map ambiguous terms to actual objective/variable names
@@ -110,15 +105,17 @@ class OtterRegistryProvider(RegistryConfigProvider):
                     module_path="otter.context_classes",
                     class_name="RunAnalysisContext",
                 ),
-                # TODO: Re-enable after propose_routines capability rework
-                # ContextClassRegistration(
-                #     context_type="ROUTINE_PROPOSAL",
-                #     module_path="otter.context_classes",
-                #     class_name="RoutineProposalContext"
-                # ),
-                # Future context classes:
-                # - ROUTINE_SPEC: For VOCS specifications
-                # - BADGER_ROUTINE: For complete executable routines
+                ContextClassRegistration(
+                    context_type="BADGER_ROUTINES",
+                    module_path="otter.context_classes",
+                    class_name="BadgerRoutinesContext",
+                ),
+                # Legacy context (kept for backward compatibility):
+                ContextClassRegistration(
+                    context_type="ROUTINE_PROPOSAL",
+                    module_path="otter.context_classes",
+                    class_name="RoutineProposalContext",
+                ),
             ],
             # ====================
             # Data Sources
