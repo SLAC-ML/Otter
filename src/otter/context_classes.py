@@ -96,6 +96,119 @@ class BadgerRunContext(CapabilityContext):
         default=None, description="User-provided tags for categorization"
     )
 
+    # ====================
+    # Environment Configuration
+    # ====================
+    environment_params: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Environment parameters from run file (e.g., beamline-specific settings, tolerances, timeouts)",
+    )
+
+    # ====================
+    # Generator/Algorithm Configuration
+    # ====================
+    generator_config: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Complete generator configuration from run file (numerical_optimizer, GP settings, turbo_controller, etc.)",
+    )
+
+    # ====================
+    # Initial Point Configuration
+    # ====================
+    num_initial_points: int = Field(
+        default=0,
+        description="Number of initial evaluation points (critical for distinguishing lucky initialization from algorithm performance)",
+    )
+    initial_point_actions: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Initial point generation actions (e.g., [{'type': 'add_curr'}, {'type': 'add_rand', 'config': {...}}])",
+    )
+    relative_to_current: bool = Field(
+        default=True,
+        description="Whether variable ranges are relative to current machine state",
+    )
+
+    # ====================
+    # Variable Range Settings
+    # ====================
+    vrange_limit_options: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Per-variable range limiting configuration (only for VOCS variables). "
+        "Each variable has: delta, limit_option_idx, ratio_curr, ratio_full",
+    )
+    vrange_hard_limit: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Hard limits per variable (absolute bounds that cannot be exceeded)",
+    )
+
+    # ====================
+    # Key Evaluation Data Points (with iteration numbers)
+    # ====================
+    best_evaluation: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Best evaluation overall: {'iteration': int, 'values': {obj_name: value, ...}}",
+    )
+    worst_evaluation: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Worst evaluation overall: {'iteration': int, 'values': {obj_name: value, ...}}",
+    )
+    best_evaluation_outside_initial: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Best evaluation from optimization phase (excluding initial points): {'iteration': int, 'values': {...}}",
+    )
+    worst_evaluation_outside_initial: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Worst evaluation from optimization phase (excluding initial points): {'iteration': int, 'values': {...}}",
+    )
+    initial_evaluations: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="All initial point evaluations: [{'iteration': int, 'values': {obj_name: value, ...}}, ...]",
+    )
+    final_evaluation: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Final evaluation: {'iteration': int, 'values': {obj_name: value, ...}}",
+    )
+
+    # ====================
+    # Formulas and Observables
+    # ====================
+    observables: List[str] = Field(
+        default_factory=list,
+        description="Observable names from VOCS (derived quantities computed during optimization)",
+    )
+    formulas: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Computed formulas: {formula_expr: {formula: str, variable_mapping: dict}}",
+    )
+    observable_formulas: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Observable formulas: {formula_expr: {formula: str, variable_mapping: dict}}",
+    )
+    constraint_formulas: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Constraint formulas: {formula_expr: {formula: str, variable_mapping: dict}}",
+    )
+
+    # ====================
+    # Other Settings
+    # ====================
+    critical_constraint_names: List[str] = Field(
+        default_factory=list,
+        description="Names of critical constraints (violations cause run termination)",
+    )
+    additional_variables: List[str] = Field(
+        default_factory=list,
+        description="Additional variables list (variables not being optimized but tracked)",
+    )
+    badger_version: Optional[str] = Field(
+        default=None,
+        description="Badger version used for this run (e.g., '1.4.1.dev2+g8f56691.d20250610')",
+    )
+    xopt_version: Optional[str] = Field(
+        default=None,
+        description="xopt version used for this run (e.g., '2.6.3')",
+    )
+
     def _get_variable_names(self) -> List[str]:
         """Extract variable names from VOCS structure."""
         return [list(var_dict.keys())[0] for var_dict in self.variables]
@@ -285,7 +398,14 @@ class BadgerRunContext(CapabilityContext):
         # Format timestamp
         timestamp_str = self.timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
-        # Build summary
+        # Calculate best_from_initial flag (was best value from lucky initialization?)
+        best_from_initial = None
+        if self.best_evaluation and self.num_initial_points > 0:
+            best_iter = self.best_evaluation.get("iteration")
+            if best_iter is not None:
+                best_from_initial = best_iter < self.num_initial_points
+
+        # Build summary with enriched fields
         summary = {
             "type": "Badger Optimization Run",
             "run_name": self.run_name,
@@ -297,15 +417,93 @@ class BadgerRunContext(CapabilityContext):
                 "variables": self.variables,
                 "objectives": self.objectives,
                 "constraints": self.constraints if self.constraints else [],
+                "observables": self.observables if self.observables else [],
             },
             "execution": {
                 "num_evaluations": self.num_evaluations,
+                "num_initial_points": self.num_initial_points,
                 "improvement": (
                     improvement_summary if improvement_summary else "No improvement data available"
                 ),
             },
         }
 
+        # Add best evaluation details with iteration context
+        if self.best_evaluation:
+            summary["best_evaluation"] = {
+                "iteration": self.best_evaluation.get("iteration"),
+                "values": self.best_evaluation.get("values"),
+                "from_initial_sampling": best_from_initial,  # Luck vs skill indicator
+            }
+
+        # Add algorithm performance (excluding lucky initialization)
+        if self.best_evaluation_outside_initial:
+            summary["best_outside_initial"] = {
+                "iteration": self.best_evaluation_outside_initial.get("iteration"),
+                "values": self.best_evaluation_outside_initial.get("values"),
+            }
+
+        # Add configuration section (for reproduction and analysis)
+        config_section = {}
+
+        # Generator configuration
+        if self.generator_config:
+            config_section["generator"] = self.generator_config
+        else:
+            config_section["generator"] = {"name": self.algorithm}
+
+        # Environment parameters
+        if self.environment_params:
+            config_section["environment_params"] = self.environment_params
+
+        # Initial point strategy
+        if self.num_initial_points > 0 or self.initial_point_actions:
+            config_section["initial_point_strategy"] = {
+                "num_points": self.num_initial_points,
+                "actions": self.initial_point_actions,
+                "relative_to_current": self.relative_to_current,
+            }
+
+        # Variable range settings (only if present)
+        if self.vrange_limit_options or self.vrange_hard_limit:
+            config_section["vrange_settings"] = {}
+            if self.vrange_limit_options:
+                config_section["vrange_settings"]["limit_options"] = self.vrange_limit_options
+            if self.vrange_hard_limit:
+                config_section["vrange_settings"]["hard_limits"] = self.vrange_hard_limit
+
+        if config_section:
+            summary["configuration"] = config_section
+
+        # Add advanced section (formulas, versions) if relevant
+        advanced_section = {}
+
+        # Formulas (show count, not full dict to avoid verbosity)
+        if self.formulas:
+            advanced_section["formulas_count"] = len(self.formulas)
+        if self.observable_formulas:
+            advanced_section["observable_formulas_count"] = len(self.observable_formulas)
+        if self.constraint_formulas:
+            advanced_section["constraint_formulas_count"] = len(self.constraint_formulas)
+
+        # Versions
+        if self.badger_version or self.xopt_version:
+            advanced_section["versions"] = {}
+            if self.badger_version:
+                advanced_section["versions"]["badger"] = self.badger_version
+            if self.xopt_version:
+                advanced_section["versions"]["xopt"] = self.xopt_version
+
+        # Other settings
+        if self.critical_constraint_names:
+            advanced_section["critical_constraints"] = self.critical_constraint_names
+        if self.additional_variables:
+            advanced_section["additional_variables"] = self.additional_variables
+
+        if advanced_section:
+            summary["advanced"] = advanced_section
+
+        # Optional metadata
         if self.description:
             summary["description"] = self.description
 

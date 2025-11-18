@@ -197,22 +197,54 @@ class QueryRunsCapability(BaseCapability):
 
                     # Create BadgerRunContext with Badger-native VOCS format
                     run_context = BadgerRunContext(
+                        # Identification
                         run_filename=run_path,
                         run_name=metadata["name"],
                         timestamp=metadata["timestamp"],
                         beamline=metadata["beamline"],
                         badger_environment=metadata["badger_environment"],
                         algorithm=metadata["algorithm"],
+                        # VOCS
                         variables=metadata["variables"],  # List[Dict[str, List[float]]]
                         objectives=metadata["objectives"],  # List[Dict[str, str]]
                         constraints=metadata.get("constraints", []),
+                        # Results Summary
                         num_evaluations=metadata["num_evaluations"],
                         initial_objective_values=metadata.get("initial_values"),
                         min_objective_values=metadata.get("min_values"),
                         max_objective_values=metadata.get("max_values"),
                         final_objective_values=metadata.get("final_values"),
+                        # Optional Metadata
                         description=metadata.get("description", ""),
                         tags=metadata.get("tags"),
+                        # Environment Configuration
+                        environment_params=metadata.get("environment_params", {}),
+                        # Generator/Algorithm Configuration
+                        generator_config=metadata.get("generator_config", {}),
+                        # Initial Point Configuration
+                        num_initial_points=metadata.get("num_initial_points", 0),
+                        initial_point_actions=metadata.get("initial_point_actions", []),
+                        relative_to_current=metadata.get("relative_to_current", True),
+                        # Variable Range Settings
+                        vrange_limit_options=metadata.get("vrange_limit_options", {}),
+                        vrange_hard_limit=metadata.get("vrange_hard_limit", {}),
+                        # Key Evaluation Data Points
+                        best_evaluation=metadata.get("best_evaluation"),
+                        worst_evaluation=metadata.get("worst_evaluation"),
+                        best_evaluation_outside_initial=metadata.get("best_evaluation_outside_initial"),
+                        worst_evaluation_outside_initial=metadata.get("worst_evaluation_outside_initial"),
+                        initial_evaluations=metadata.get("initial_evaluations", []),
+                        final_evaluation=metadata.get("final_evaluation"),
+                        # Formulas and Observables
+                        observables=metadata.get("observables", []),
+                        formulas=metadata.get("formulas", {}),
+                        observable_formulas=metadata.get("observable_formulas", {}),
+                        constraint_formulas=metadata.get("constraint_formulas", {}),
+                        # Other Settings
+                        critical_constraint_names=metadata.get("critical_constraint_names", []),
+                        additional_variables=metadata.get("additional_variables", []),
+                        badger_version=metadata.get("badger_version"),
+                        xopt_version=metadata.get("xopt_version"),
                     )
 
                     loaded_runs.append(run_context)
@@ -430,6 +462,31 @@ class QueryRunsCapability(BaseCapability):
                 - Use .run_count to get total number of runs
                 - Each run has full metadata: name, algorithm, variables, objectives, evaluations
                 - Available for display or further analysis in subsequent steps
+
+                **IMPORTANT: Enriched Run Metadata Available**
+                Loaded runs include comprehensive metadata beyond basic VOCS:
+                - **num_initial_points + best_evaluation**: Distinguish luck from algorithm skill
+                  - Check if best value came from initial sampling (luck) or optimization (skill)
+                  - Critical for fair algorithm comparison
+                - **best_evaluation with iteration**: When peak performance occurred during the run
+                  - Enables convergence analysis (early vs late peak)
+                - **generator_config + environment_params**: Complete reproduction configuration
+                  - Full algorithm hyperparameters (GP settings, numerical optimizer, etc.)
+                  - Environment-specific parameters (tolerances, timeouts, safety settings)
+                - **vrange_limit_options + vrange_hard_limit**: Variable range safety settings
+                  - How variables were bounded during optimization
+                  - Hard physical limits applied
+                - **observables + formulas**: Computed objectives/constraints
+                  - Formula definitions for derived quantities
+                - **initial_point_actions + relative_to_current**: Initialization strategy
+                  - How initial points were generated
+                  - Whether ranges were relative to current machine state
+
+                **Use enriched metadata for:**
+                - Fair algorithm comparison (was success luck or skill?)
+                - Complete run reproduction (exact configuration needed)
+                - Safety analysis (what bounds were used?)
+                - Understanding why runs behaved differently (check generator_config, environment_params)
 
                 **Empty Results:**
                 - If no runs match filters, returns empty (not an error)

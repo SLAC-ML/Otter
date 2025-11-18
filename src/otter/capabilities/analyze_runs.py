@@ -303,6 +303,41 @@ class AnalyzeRunsCapability(BaseCapability):
                 for obj_dict in run.objectives:
                     objectives_dict.update(obj_dict)  # Merge all objective dicts
 
+                # NEW: Extract key data points for enhanced analysis
+                best_iteration = None
+                best_from_initial = False
+                convergence_speed = None
+                algorithm_improvement = {}
+
+                # Extract best iteration and check if from initial points
+                if run.best_evaluation:
+                    best_iteration = run.best_evaluation.get("iteration")
+                    if best_iteration is not None and run.num_initial_points > 0:
+                        best_from_initial = best_iteration < run.num_initial_points
+                    if best_iteration is not None and run.num_evaluations > 0:
+                        convergence_speed = round(best_iteration / run.num_evaluations, 3)
+
+                # Calculate algorithm improvement (initial → best_outside_initial)
+                # This shows true algorithm performance, excluding lucky initialization
+                if run.initial_objective_values and run.best_evaluation_outside_initial:
+                    for obj_name in objectives_dict.keys():
+                        direction = objectives_dict[obj_name]
+                        initial = run.initial_objective_values.get(obj_name)
+                        best_outside = run.best_evaluation_outside_initial.get("values", {}).get(
+                            obj_name
+                        )
+
+                        if initial is not None and best_outside is not None and initial != 0:
+                            if direction == "MAXIMIZE":
+                                algo_improvement_pct = (
+                                    (best_outside - initial) / abs(initial)
+                                ) * 100
+                            else:  # MINIMIZE
+                                algo_improvement_pct = (
+                                    (initial - best_outside) / abs(initial)
+                                ) * 100
+                            algorithm_improvement[obj_name] = round(algo_improvement_pct, 2)
+
                 # Calculate improvements per objective (initial → BEST values)
                 improvements = {}
                 if run.initial_objective_values:
@@ -343,6 +378,12 @@ class AnalyzeRunsCapability(BaseCapability):
                     "objectives": objectives_dict,  # {obj_name: direction}
                     "constraints": run.constraints if run.constraints else [],
                     "improvements": improvements,  # {obj_name: improvement_pct}
+                    # NEW: Enhanced analysis fields
+                    "num_initial_points": run.num_initial_points,
+                    "best_iteration": best_iteration,
+                    "best_from_initial": best_from_initial,
+                    "convergence_speed": convergence_speed,  # best_iteration / num_evaluations
+                    "algorithm_improvement": algorithm_improvement,  # True performance excluding luck
                 }
 
             # ====================
@@ -509,6 +550,49 @@ class AnalyzeRunsCapability(BaseCapability):
                 - Beamline distribution
                 - Objective analysis (most common, success rates)
                 - Success patterns (top performers, common factors)
+
+                **CRITICAL: Enhanced Per-Run Analysis Fields (NEW!)**
+                Analysis output includes powerful new metrics in per_run_details:
+                - **best_from_initial** (bool): Was best value from lucky initialization or actual optimization?
+                  - True = success came from initial sampling (luck, not algorithm skill)
+                  - False = algorithm discovered improvement during optimization (true skill)
+                  - ESSENTIAL for fair algorithm comparison
+                - **best_iteration**: When was best value achieved (convergence analysis)
+                  - Identifies early-peak vs late-peak algorithms
+                  - Shows when algorithm found its best solution
+                - **convergence_speed**: Fraction of run to reach best (0.0 to 1.0)
+                  - Low value = found best early (efficient OR lucky - check best_from_initial!)
+                  - High value = found best late (thorough exploration)
+                  - Efficiency metric for algorithm comparison
+                - **algorithm_improvement**: True algorithm performance (initial → best_outside_initial)
+                  - Excludes any luck from initial sampling
+                  - Shows what the algorithm ACTUALLY achieved during optimization
+                  - Use this metric for fair algorithm effectiveness comparison
+                - **num_initial_points**: Context for interpreting early success
+                  - How many random samples were taken before optimization started
+                  - Critical for understanding if success was due to luck or skill
+
+                **Use these enriched fields for:**
+                - **Identifying "lucky" runs vs "skilled" algorithms**
+                  - Example: Run A: +20% improvement, best_from_initial=True (lucky init)
+                  - Example: Run B: +12% improvement, best_from_initial=False (true skill)
+                  - → Run B's algorithm is more reliable despite lower total improvement
+                - **Fair performance comparison** (algorithm_improvement excludes initialization luck)
+                  - Compare algorithm_improvement across runs, not total improvement
+                  - Total improvement can be misleading when best came from lucky initialization
+                - **Convergence analysis** (when do algorithms peak?)
+                  - Early convergence_speed = efficient (if best_from_initial=False) or lucky (if True)
+                  - Late convergence_speed = thorough exploration
+                - **Algorithm reliability assessment**
+                  - Consistent best_from_initial=False → reliable algorithm
+                  - Frequent best_from_initial=True → algorithm relies on luck
+
+                **Example insight enabled by enriched fields:**
+                "Analysis shows Run A achieved +20% improvement, but best_from_initial=True indicates
+                this success came from lucky initialization at evaluation 2. The algorithm itself only
+                achieved +5% improvement (algorithm_improvement). Run B achieved +12% improvement with
+                best_from_initial=False, demonstrating consistent algorithm performance. Recommendation:
+                Use Run B's configuration - it shows true algorithmic skill rather than lucky sampling."
 
                 **Output Format:**
                 - Creates RUN_ANALYSIS context for downstream use

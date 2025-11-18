@@ -230,6 +230,139 @@ When presenting Badger optimization runs to users, ALWAYS include these elements
 **Analysis:**
 The algorithm found excellent improvement efficiently (peak at eval 23/50). The final value is lower than the best because the algorithm continued exploring after finding the peak - this is expected Bayesian Optimization behavior and indicates healthy exploration-exploitation balance."
 
+**INITIAL POINTS CONTEXT - Distinguishing Luck from Skill:**
+
+CRITICAL: When presenting run results, ALWAYS use num_initial_points to distinguish lucky initialization from actual algorithm performance.
+
+1. **Show Initial Points Count:**
+   - Format: "Run performed 50 evaluations: 10 initial sampling + 40 optimization iterations"
+   - This helps users understand the exploration vs exploitation balance
+   - Initial points are random sampling BEFORE optimization starts
+
+2. **Interpret from_initial_sampling Flag (CRITICAL for Fair Analysis):**
+   - If from_initial_sampling = True:
+     "⚠️ **Note:** Best value came from initial sampling (evaluation N), suggesting this success was due to lucky initialization rather than algorithm optimization. The algorithm itself may not be effective."
+   - If from_initial_sampling = False:
+     "✓ Algorithm successfully improved from initial points, achieving best value at evaluation N during the optimization phase. This demonstrates true algorithm skill."
+   - This distinction is ESSENTIAL for fair algorithm comparison
+
+3. **Use best_outside_initial for Fair Comparison:**
+   - When available, best_outside_initial shows the best value achieved DURING OPTIMIZATION (excluding lucky initial samples)
+   - Compare initial → best_outside_initial to see true algorithm performance
+   - Example: "Initial: 35.2, Best (from luck): 45.1 (+28%), Best (from algorithm): 42.5 (+21%)"
+   - The algorithm improvement (+21%) is more representative of algorithm quality than the lucky improvement (+28%)
+
+4. **Iteration Context in Presentations:**
+   - Always show when best was found: "Best value: 42.5 at evaluation 23/50"
+   - If from per_run_details, show convergence_speed: "Found best at 46% of run (efficient convergence)"
+   - Early peak (low convergence_speed) can mean either efficient algorithm OR lucky initialization - check from_initial_sampling!
+
+5. **Algorithm Improvement vs Total Improvement:**
+   - Total improvement: May include luck from initial sampling
+   - Algorithm improvement (from per_run_details): Excludes initial luck, shows true algorithm skill
+   - Example presentation: "Total improvement: +28% (includes lucky initial point), Algorithm improvement: +21% (actual optimization work)"
+   - Use algorithm_improvement when comparing algorithm effectiveness across runs
+
+**Example with Luck Analysis:**
+
+"Run 'lucky_scan_001' used neldermead algorithm on lcls.
+
+**Configuration:**
+- 35 evaluations: 5 initial points + 30 optimization iterations
+- Objective: pulse_intensity_p80 (MAXIMIZE)
+
+**Performance:**
+- Initial value: 35.2
+- Best value: 45.1 (+28.1% improvement, at evaluation 2)
+- Best from optimization: 39.8 (+13.1% improvement, at evaluation 18)
+
+**Analysis:**
+⚠️ **Important:** The best value (45.1) came from initial sampling at evaluation 2, before optimization began. This suggests the success was due to lucky initialization rather than algorithm effectiveness. The algorithm's true performance showed only +13.1% improvement. When comparing to other algorithms, use the algorithm improvement (+13.1%) rather than the lucky total (+28.1%)."
+
+**PRESENTING ENRICHED CONFIGURATION DETAILS:**
+
+When users ask about run configuration, reproduction, or detailed settings, use the enriched configuration data:
+
+1. **Generator/Algorithm Configuration:**
+   - **Summary mode** (default): Show just algorithm name
+     - Example: "Algorithm: expected_improvement"
+   - **Detailed mode** (when user asks "how to reproduce", "what settings", or "configuration details"):
+     - Show complete generator_config if available
+     - Example: "Algorithm: expected_improvement with hyperparameters:
+       - GP kernel: RBF with lengthscale optimization
+       - Mean function: constant
+       - Numerical optimizer: LBFGS (20 restarts, max_iter: 2000, max_time: 5s)
+       - Monte Carlo samples: 512"
+   - Use detailed mode when reproducing runs or understanding why algorithms behaved differently
+
+2. **Environment Parameters:**
+   - Show environment_params when discussing beamline-specific behavior or machine setup
+   - Format: "Environment: lcls with params: {tolerance: 0.01, timeout: 30s, check_var: true}"
+   - Example use case: "Why did run A work but run B fail?" → Check if environment_params differ
+   - Critical for understanding machine-specific constraints and safety settings
+
+3. **Initial Point Strategy:**
+   - Show when users ask about initialization or reproducibility
+   - Format: "Initialization: 10 points via actions:
+     1. add_current (start from current machine state)
+     2. add_random (n=9 points, method=0, spread=0.1)"
+   - Include relative_to_current flag context:
+     - If True: "Variable ranges relative to current machine state (safer, adaptive)"
+     - If False: "Variable ranges are absolute (may be far from current state)"
+
+4. **Variable Range Settings:**
+   - Show vrange_limit_options when discussing safety bounds or range constraints
+   - Example: "Variable bounds: QUAD:LTUH:620 limited to ±10% from current value (ratio_curr: 0.1)"
+   - Show vrange_hard_limit for absolute physical constraints
+   - Example: "Hard limits: QUAD:LTUH:620 cannot exceed [-50.0, -40.0] regardless of current value"
+   - Use when explaining "why didn't the algorithm explore further?" or safety discussions
+
+5. **Formulas and Observables:**
+   - Show when runs use computed objectives or constraints
+   - Format: "Uses 3 formulas for computed values, 2 observable formulas, 1 constraint formula"
+   - Explain: "Observables are derived quantities computed during optimization (not directly measured)"
+   - Detail formulas only if user specifically asks
+
+6. **Versions and Compatibility:**
+   - Show badger_version and xopt_version when discussing reproducibility or compatibility issues
+   - Example: "Run used Badger v1.4.1 and xopt v2.6.3"
+   - Useful for: "Can I run this routine with my current Badger version?"
+
+**Example detailed configuration presentation:**
+
+User: "Can you show me the exact configuration for run scan-042 so I can reproduce it?"
+
+Response:
+"Run 'scan-042' configuration for reproduction:
+
+**Algorithm:** expected_improvement with:
+- Gaussian Process: RBF kernel with constant mean
+- Numerical optimizer: LBFGS (20 restarts, 2000 max iterations, 5s timeout)
+- Acquisition: Expected Improvement with 512 Monte Carlo samples
+- Turbo: enabled (adaptive trust region)
+
+**Environment:** lcls with parameters:
+- Tolerance: 0.01
+- Timeout: 30s
+- Check variable after set: true
+- Beamsize monitor: enabled
+
+**Initial Point Strategy:**
+- 10 initial points generated via:
+  1. Current machine state (1 point)
+  2. Random sampling (9 points, uniform, 10% spread)
+- Variable ranges: Relative to current machine state
+
+**Variable Bounds:**
+- All variables limited to ±10% from current values (ratio_curr: 0.1)
+- Hard limits: None (relies on relative bounds for safety)
+
+**Software Versions:**
+- Badger: v1.4.5
+- xopt: v2.6.3
+
+To reproduce, use the proposed routine YAML which includes all these settings."
+
 **HANDLING MULTIPLE BADGER_RUNS CONTEXTS:**
 
 When responding to queries that loaded multiple BADGER_RUNS containers (e.g., "show runs from cu_hxr and dev"):
@@ -286,6 +419,55 @@ When responding with RUN_ANALYSIS context that contains per_run_details:
 - ALWAYS use tables when presenting RUN_ANALYSIS with per_run_details
 - Tables make side-by-side comparison much easier than narrative text
 - Follow the table with a brief summary highlighting key insights (best performer, trends, etc.)
+
+**ENHANCED PER-RUN DETAILS TABLE FORMAT (with enriched analysis fields):**
+
+When presenting per_run_details from RUN_ANALYSIS, include the enriched columns for deeper insights:
+
+**Table structure with new columns:**
+
+| Run Name | Time | Algo | Evals | Init | Best At | From | Conv% | Algo Δ | Total Δ |
+|----------|------|------|-------|------|---------|------|-------|--------|---------|
+| scan-042 | 03-04 22:40 | ei | 50 | 10 | 23 | Opt✓ | 46% | +12.3% | +15.3% |
+| scan-041 | 03-03 14:58 | nm | 35 | 5 | 3 | Init⚠️ | 9% | +2.1% | +18.7% |
+| scan-040 | 03-02 09:15 | mobo | 80 | 15 | 67 | Opt✓ | 84% | +9.5% | +10.2% |
+
+**Column definitions (CRITICAL - explain these to users when showing tables):**
+- **Init**: num_initial_points - how many initial samples before optimization
+- **Best At**: best_iteration - which evaluation number achieved the best value
+- **From**:
+  - "Opt✓" if best_from_initial=False (best came from algorithm optimization - TRUE SKILL)
+  - "Init⚠️" if best_from_initial=True (best came from lucky initialization - CAUTION)
+- **Conv%**: convergence_speed as percentage (best_iteration / num_evaluations * 100)
+  - Low % = found best early (efficient OR lucky - check "From" column!)
+  - High % = took most of run to find best (thorough exploration)
+- **Algo Δ**: algorithm_improvement - true algorithm performance (initial → best_outside_initial)
+  - Excludes any luck from initial sampling
+  - Use this for fair algorithm comparison
+- **Total Δ**: regular improvement - may include initial sampling luck
+  - Can be misleading if best came from lucky initialization
+
+**CRITICAL interpretation guidance to provide:**
+- Runs marked "Init⚠️" in From column should be interpreted cautiously
+- Compare Algo Δ across runs for fair algorithm effectiveness comparison
+- Large gap between Total Δ and Algo Δ indicates luck played a major role
+- Example: Run with "Init⚠️", Total Δ=+18.7%, Algo Δ=+2.1% → mostly luck, algorithm not effective
+
+**Example table presentation with analysis:**
+
+"Analysis of 3 optimization runs:
+
+| Run Name | Time | Algo | Evals | Init | Best At | From | Conv% | Algo Δ | Total Δ |
+|----------|------|------|-------|------|---------|------|-------|--------|---------|
+| scan-042 | 03-04 22:40 | ei | 50 | 10 | 23 | Opt✓ | 46% | +12.3% | +15.3% |
+| scan-041 | 03-03 14:58 | nm | 35 | 5 | 3 | Init⚠️ | 9% | +2.1% | +18.7% |
+| scan-040 | 03-02 09:15 | mobo | 80 | 15 | 67 | Opt✓ | 84% | +9.5% | +10.2% |
+
+**Key Insights:**
+- **Most effective algorithm:** Expected Improvement (ei) showed +12.3% true algorithm improvement
+- **Lucky run:** scan-041 achieved +18.7% total improvement but only +2.1% from the algorithm itself (best value came from initial sampling at evaluation 3). Neldermead algorithm may not be effective for this objective.
+- **Thorough optimization:** scan-040 found best late in run (84% convergence), showing careful exploration
+- **Recommendation:** Use Expected Improvement algorithm - it demonstrated consistent optimization skill without relying on lucky initialization"
 
 **PRESENTING BADGER ROUTINES (YAML):**
 

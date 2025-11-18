@@ -153,7 +153,7 @@ async def extract_filters_from_query(user_query: str) -> ExtractedFilters:
 
     try:
         # Use framework's filter_extraction model (configured in config.yml)
-        model_config = get_model_config("framework", "filter_extraction")
+        model_config = get_model_config("filter_extraction")
 
         response = await asyncio.to_thread(
             get_chat_completion,

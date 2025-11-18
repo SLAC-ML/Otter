@@ -349,6 +349,150 @@ class BadgerArchiveDataSource:
         logger.info(f"Found {len(run_paths)} runs matching filters (sort_order={sort_order})")
         return run_paths
 
+    def _extract_key_data_points(
+        self, run_data: Dict[str, Any], objectives: List[Dict[str, str]]
+    ) -> Dict[str, Any]:
+        """
+        Extract key evaluation data points with iteration numbers.
+
+        Args:
+            run_data: Complete run data from YAML file
+            objectives: List of objective dicts from VOCS
+
+        Returns:
+            Dict containing:
+                - num_initial_points: int - Number of initial evaluations
+                - best_evaluation: Dict with iteration and values
+                - worst_evaluation: Dict with iteration and values
+                - best_evaluation_outside_initial: Dict with iteration and values
+                - worst_evaluation_outside_initial: Dict with iteration and values
+                - initial_evaluations: List of dicts with iteration and values
+                - final_evaluation: Dict with iteration and values
+        """
+        data = run_data.get("data", {})
+        initial_points = run_data.get("initial_points", {})
+
+        # Count initial points
+        num_initial = 0
+        if initial_points:
+            first_var = next(iter(initial_points.keys()), None)
+            if first_var:
+                num_initial = len(initial_points[first_var])
+
+        # Extract objective names and directions
+        obj_info = {}
+        for obj_dict in objectives:
+            obj_name = list(obj_dict.keys())[0]
+            direction = obj_dict[obj_name]
+            obj_info[obj_name] = direction
+
+        if not data or not obj_info:
+            return {
+                "num_initial_points": num_initial,
+                "best_evaluation": None,
+                "worst_evaluation": None,
+                "best_evaluation_outside_initial": None,
+                "worst_evaluation_outside_initial": None,
+                "initial_evaluations": [],
+                "final_evaluation": None,
+            }
+
+        # Use first objective for comparison (primary objective)
+        primary_obj = list(obj_info.keys())[0]
+        primary_direction = obj_info[primary_obj]
+
+        # Get number of evaluations
+        num_evals = len(data[primary_obj]) if primary_obj in data else 0
+
+        if num_evals == 0:
+            return {
+                "num_initial_points": num_initial,
+                "best_evaluation": None,
+                "worst_evaluation": None,
+                "best_evaluation_outside_initial": None,
+                "worst_evaluation_outside_initial": None,
+                "initial_evaluations": [],
+                "final_evaluation": None,
+            }
+
+        # Extract all evaluations with iteration numbers
+        evaluations = []
+        for i in range(num_evals):
+            eval_values = {}
+            for obj_name in obj_info.keys():
+                if obj_name in data and str(i) in data[obj_name]:
+                    eval_values[obj_name] = data[obj_name][str(i)]
+            if eval_values:
+                evaluations.append({"iteration": i, "values": eval_values})
+
+        # Find best and worst overall
+        best_eval = None
+        worst_eval = None
+        for eval_data in evaluations:
+            if primary_obj in eval_data["values"]:
+                val = eval_data["values"][primary_obj]
+                if val is not None:
+                    if best_eval is None:
+                        best_eval = eval_data
+                        worst_eval = eval_data
+                    else:
+                        best_val = best_eval["values"][primary_obj]
+                        worst_val = worst_eval["values"][primary_obj]
+
+                        if primary_direction == "MAXIMIZE":
+                            if val > best_val:
+                                best_eval = eval_data
+                            if val < worst_val:
+                                worst_eval = eval_data
+                        else:  # MINIMIZE
+                            if val < best_val:
+                                best_eval = eval_data
+                            if val > worst_val:
+                                worst_eval = eval_data
+
+        # Extract initial evaluations
+        initial_evaluations = [e for e in evaluations if e["iteration"] < num_initial]
+
+        # Extract final evaluation
+        final_evaluation = evaluations[-1] if evaluations else None
+
+        # Find best and worst outside initial points
+        optimization_evals = [e for e in evaluations if e["iteration"] >= num_initial]
+        best_outside = None
+        worst_outside = None
+
+        for eval_data in optimization_evals:
+            if primary_obj in eval_data["values"]:
+                val = eval_data["values"][primary_obj]
+                if val is not None:
+                    if best_outside is None:
+                        best_outside = eval_data
+                        worst_outside = eval_data
+                    else:
+                        best_val = best_outside["values"][primary_obj]
+                        worst_val = worst_outside["values"][primary_obj]
+
+                        if primary_direction == "MAXIMIZE":
+                            if val > best_val:
+                                best_outside = eval_data
+                            if val < worst_val:
+                                worst_outside = eval_data
+                        else:  # MINIMIZE
+                            if val < best_val:
+                                best_outside = eval_data
+                            if val > worst_val:
+                                worst_outside = eval_data
+
+        return {
+            "num_initial_points": num_initial,
+            "best_evaluation": best_eval,
+            "worst_evaluation": worst_eval,
+            "best_evaluation_outside_initial": best_outside,
+            "worst_evaluation_outside_initial": worst_outside,
+            "initial_evaluations": initial_evaluations,
+            "final_evaluation": final_evaluation,
+        }
+
     def load_run_metadata(self, run_path: str) -> Dict[str, Any]:
         """
         Load minimal metadata from run file without full evaluation data.
@@ -518,6 +662,65 @@ class BadgerArchiveDataSource:
                 metadata["min_values"] = None
                 metadata["max_values"] = None
                 metadata["final_values"] = None
+
+            # Extract new enriched fields
+
+            # Environment configuration
+            environment_data = run_data.get("environment", {})
+            metadata["environment_params"] = environment_data.get("params", {})
+
+            # Generator/algorithm configuration
+            metadata["generator_config"] = run_data.get("generator", {})
+
+            # Initial point configuration
+            metadata["initial_point_actions"] = run_data.get("initial_point_actions", [])
+            metadata["relative_to_current"] = run_data.get("relative_to_current", True)
+
+            # Variable range settings (filter to only VOCS variables)
+            vrange_limit_options_full = run_data.get("vrange_limit_options", {})
+            vrange_hard_limit_full = run_data.get("vrange_hard_limit", {})
+
+            # Get variable names from VOCS
+            vocs_variable_names = [list(var.keys())[0] for var in metadata["variables"]]
+
+            # Filter vrange settings to only include VOCS variables
+            metadata["vrange_limit_options"] = {
+                var: vrange_limit_options_full[var]
+                for var in vocs_variable_names
+                if var in vrange_limit_options_full
+            }
+            metadata["vrange_hard_limit"] = {
+                var: vrange_hard_limit_full[var]
+                for var in vocs_variable_names
+                if var in vrange_hard_limit_full
+            }
+
+            # Formulas and observables
+            metadata["observables"] = vocs.get("observables", [])
+            metadata["formulas"] = run_data.get("formulas", {})
+            metadata["observable_formulas"] = run_data.get("observable_formulas", {})
+            metadata["constraint_formulas"] = run_data.get("constraint_formulas", {})
+
+            # Other settings
+            metadata["critical_constraint_names"] = run_data.get("critical_constraint_names", [])
+            metadata["additional_variables"] = run_data.get("additional_variables", [])
+            metadata["badger_version"] = run_data.get("badger_version")
+            metadata["xopt_version"] = run_data.get("xopt_version")
+
+            # Extract key data points with iteration numbers
+            try:
+                key_data_points = self._extract_key_data_points(run_data, metadata["objectives"])
+                metadata.update(key_data_points)
+            except Exception as e:
+                logger.warning(f"Failed to extract key data points: {e}")
+                # Add default values if extraction fails
+                metadata["num_initial_points"] = 0
+                metadata["best_evaluation"] = None
+                metadata["worst_evaluation"] = None
+                metadata["best_evaluation_outside_initial"] = None
+                metadata["worst_evaluation_outside_initial"] = None
+                metadata["initial_evaluations"] = []
+                metadata["final_evaluation"] = None
 
             return metadata
 

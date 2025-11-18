@@ -88,7 +88,7 @@ def convert_vocs_from_run_context(run):
         "objectives": objectives,
         "constraints": constraints,
         "constants": {},
-        "observables": [],
+        "observables": run.observables,  # Use observables from run
     }
 
     return vocs_dict
@@ -108,36 +108,57 @@ def compose_routine_from_run(run, name_override: Optional[str] = None):
     # Get VOCS
     vocs_dict = convert_vocs_from_run_context(run)
 
-    # Compose routine dict with safe defaults
+    # Extract variable names from VOCS for filtering vrange settings
+    vocs_variable_names = list(vocs_dict["variables"].keys())
+
+    # Filter vrange settings to only include VOCS variables
+    vrange_limit_options_filtered = {
+        var: run.vrange_limit_options[var]
+        for var in vocs_variable_names
+        if var in run.vrange_limit_options
+    } if run.vrange_limit_options else {}
+
+    vrange_hard_limit_filtered = {
+        var: run.vrange_hard_limit[var]
+        for var in vocs_variable_names
+        if var in run.vrange_hard_limit
+    } if run.vrange_hard_limit else {}
+
+    # Compose routine dict using enriched data from successful run
     routine_dict = {
         "name": name_override or f"{run.run_name}-proposed",
         "description": f"Routine based on successful run: {run.run_name}\n"
         f"Algorithm: {run.algorithm}, Beamline: {run.beamline}\n"
         f"Generated from optimization run with {run.num_evaluations} evaluations.",
-        # Environment
+        # Environment - use actual params from successful run
         "environment": {
             "name": run.badger_environment,
-            "params": {},  # Empty for now - user must configure
+            "params": run.environment_params,  # Actual environment params from run
         },
         # VOCS
         "vocs": vocs_dict,
-        # Generator
-        "generator": {
+        # Generator - use complete config from successful run
+        "generator": run.generator_config if run.generator_config else {
             "name": run.algorithm,
-            # Default params - could be enhanced to extract from original run
         },
-        # Initial points - use current machine state
+        # Initial points configuration - use from successful run
         "initial_points": None,  # Will use initial_point_actions instead
-        # Safety settings
-        "relative_to_current": True,  # Safe default: work relative to current state
-        "initial_point_actions": [{"type": "add_curr"}],  # Start from current machine state
+        "initial_point_actions": run.initial_point_actions if run.initial_point_actions else [{"type": "add_curr"}],
+        # Safety settings - use from successful run
+        "relative_to_current": run.relative_to_current,
+        # Variable range settings - filtered to VOCS variables
+        "vrange_limit_options": vrange_limit_options_filtered if vrange_limit_options_filtered else None,
+        "vrange_hard_limit": vrange_hard_limit_filtered,
+        # Formulas - use from successful run
+        "formulas": run.formulas if run.formulas else {},
+        "observable_formulas": run.observable_formulas if run.observable_formulas else {},
+        "constraint_formulas": run.constraint_formulas if run.constraint_formulas else {},
         # Constraints
-        "critical_constraint_names": [],
-        # Advanced (using defaults)
-        "vrange_limit_options": None,
-        "vrange_hard_limit": {},
-        # Metadata
-        "badger_version": badger.__version__,
+        "critical_constraint_names": run.critical_constraint_names if run.critical_constraint_names else [],
+        "additional_variables": run.additional_variables if run.additional_variables else [],
+        # Metadata - preserve version info from run
+        "badger_version": run.badger_version if run.badger_version else badger.__version__,
+        "xopt_version": run.xopt_version if run.xopt_version else None,
     }
 
     return routine_dict
@@ -353,6 +374,42 @@ class ProposeRoutinesCapability(BaseCapability):
 
                 **Input:** BADGER_RUNS + RUN_ANALYSIS contexts
                 **Output:** BADGER_ROUTINES (executable YAML strings)
+
+                **IMPORTANT: Complete Configuration from Successful Runs**
+                Generated routines include enriched configuration (NOT minimal defaults):
+                - **Full generator_config**: Exact GP settings, numerical optimizer params, turbo settings
+                  - Not just algorithm name, but complete hyperparameter configuration
+                  - Includes: GP kernel, mean function, numerical optimizer (LBFGS settings, restarts, timeouts)
+                  - Monte Carlo samples, acquisition function details
+                  - TuRBO controller settings if used
+                - **Actual environment_params**: Proven beamline-specific settings from working run
+                  - Tolerances, timeouts, safety checks
+                  - Beamline-specific parameters that made the run successful
+                  - Critical for reproducibility on specific machines
+                - **Initial_point_actions**: Initialization strategy that succeeded
+                  - Exact sequence of how initial points were generated
+                  - Random sampling parameters (spread, method)
+                  - Starting from current state vs absolute values
+                - **vrange_limit_options + hard_limits**: Variable range configurations
+                  - Proven safe bounds from successful run
+                  - Relative range settings (ratio_curr, ratio_full)
+                  - Hard physical limits that were respected
+                - **Formulas + observables**: Computed objectives/constraints
+                  - Formula definitions if run used derived quantities
+                  - Observable computations
+                  - Constraint formulas
+                - **relative_to_current**: Whether ranges adapt to current machine state
+                  - Preserved from successful run configuration
+                - **Versions**: badger_version, xopt_version for compatibility tracking
+
+                **Result:**
+                Routines are complete, executable configurations that faithfully reproduce successful runs.
+                NOT minimal skeletons with hardcoded defaults - actual proven settings.
+                This enables:
+                - Reliable replication of successful optimizations
+                - Understanding what made a run successful (all settings preserved)
+                - Safe operation (proven bounds and parameters included)
+                - Proper reproduction on same beamline/environment
                 """
             ).strip(),
             examples=[example],
