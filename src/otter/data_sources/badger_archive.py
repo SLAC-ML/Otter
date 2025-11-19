@@ -174,6 +174,16 @@ class BadgerArchiveDataSource:
         try:
             with open(cache_path, "r") as f:
                 index = json.load(f)
+
+            # Check cache version - invalidate if outdated
+            cache_version = index.get("version", "1.0")
+            if cache_version != "2.0":
+                logger.info(
+                    f"Cache version mismatch (found {cache_version}, expected 2.0). "
+                    "Invalidating cache and rebuilding..."
+                )
+                return None
+
             logger.info(f"Loaded index cache from {cache_path} ({index.get('total_runs', 0)} runs)")
             return index
         except FileNotFoundError:
@@ -195,7 +205,7 @@ class BadgerArchiveDataSource:
         Returns:
             Index dict with metadata for all runs
         """
-        index = {"version": "1.0", "created_at": datetime.now().isoformat(), "runs": []}
+        index = {"version": "2.0", "created_at": datetime.now().isoformat(), "runs": []}
 
         # Collect all visible YAML files
         all_files = []
@@ -241,6 +251,29 @@ class BadgerArchiveDataSource:
                     "final_objective_values": metadata.get("final_values"),
                     "description": metadata.get("description", ""),
                     "tags": metadata.get("tags"),
+                    # Enriched metadata fields
+                    "environment_params": metadata.get("environment_params", {}),
+                    "generator_config": metadata.get("generator_config", {}),
+                    "initial_point_actions": metadata.get("initial_point_actions", []),
+                    "relative_to_current": metadata.get("relative_to_current", True),
+                    "vrange_limit_options": metadata.get("vrange_limit_options", {}),
+                    "vrange_hard_limit": metadata.get("vrange_hard_limit", {}),
+                    "observables": metadata.get("observables", []),
+                    "formulas": metadata.get("formulas", {}),
+                    "observable_formulas": metadata.get("observable_formulas", {}),
+                    "constraint_formulas": metadata.get("constraint_formulas", {}),
+                    "critical_constraint_names": metadata.get("critical_constraint_names", []),
+                    "additional_variables": metadata.get("additional_variables", []),
+                    "badger_version": metadata.get("badger_version"),
+                    "xopt_version": metadata.get("xopt_version"),
+                    # Key data points with iteration numbers
+                    "num_initial_points": metadata.get("num_initial_points", 0),
+                    "best_evaluation": metadata.get("best_evaluation"),
+                    "worst_evaluation": metadata.get("worst_evaluation"),
+                    "best_evaluation_outside_initial": metadata.get("best_evaluation_outside_initial"),
+                    "worst_evaluation_outside_initial": metadata.get("worst_evaluation_outside_initial"),
+                    "initial_evaluations": metadata.get("initial_evaluations", []),
+                    "final_evaluation": metadata.get("final_evaluation"),
                 }
 
                 index["runs"].append(serializable_metadata)
@@ -545,6 +578,29 @@ class BadgerArchiveDataSource:
                         "final_values": run.get("final_objective_values"),
                         "description": run.get("description", ""),
                         "tags": run.get("tags"),
+                        # Enriched metadata fields
+                        "environment_params": run.get("environment_params", {}),
+                        "generator_config": run.get("generator_config", {}),
+                        "initial_point_actions": run.get("initial_point_actions", []),
+                        "relative_to_current": run.get("relative_to_current", True),
+                        "vrange_limit_options": run.get("vrange_limit_options", {}),
+                        "vrange_hard_limit": run.get("vrange_hard_limit", {}),
+                        "observables": run.get("observables", []),
+                        "formulas": run.get("formulas", {}),
+                        "observable_formulas": run.get("observable_formulas", {}),
+                        "constraint_formulas": run.get("constraint_formulas", {}),
+                        "critical_constraint_names": run.get("critical_constraint_names", []),
+                        "additional_variables": run.get("additional_variables", []),
+                        "badger_version": run.get("badger_version"),
+                        "xopt_version": run.get("xopt_version"),
+                        # Key data points with iteration numbers
+                        "num_initial_points": run.get("num_initial_points", 0),
+                        "best_evaluation": run.get("best_evaluation"),
+                        "worst_evaluation": run.get("worst_evaluation"),
+                        "best_evaluation_outside_initial": run.get("best_evaluation_outside_initial"),
+                        "worst_evaluation_outside_initial": run.get("worst_evaluation_outside_initial"),
+                        "initial_evaluations": run.get("initial_evaluations", []),
+                        "final_evaluation": run.get("final_evaluation"),
                     }
 
         # Fallback: load from file if not in index
@@ -586,15 +642,15 @@ class BadgerArchiveDataSource:
             # Objectives: {name: direction} → [{name: direction}, ...]
             vocs = run_data.get("vocs", {})
 
-            variables_dict = vocs.get("variables", {})
+            variables_dict = vocs.get("variables") or {}
             metadata["variables"] = [{name: ranges} for name, ranges in variables_dict.items()]
 
-            objectives_dict = vocs.get("objectives", {})
+            objectives_dict = vocs.get("objectives") or {}
             metadata["objectives"] = [
                 {name: direction} for name, direction in objectives_dict.items()
             ]
 
-            constraints_dict = vocs.get("constraints", {})
+            constraints_dict = vocs.get("constraints") or {}
             metadata["constraints"] = (
                 [{name: config} for name, config in constraints_dict.items()]
                 if constraints_dict
@@ -667,18 +723,18 @@ class BadgerArchiveDataSource:
 
             # Environment configuration
             environment_data = run_data.get("environment", {})
-            metadata["environment_params"] = environment_data.get("params", {})
+            metadata["environment_params"] = environment_data.get("params") or {}
 
             # Generator/algorithm configuration
-            metadata["generator_config"] = run_data.get("generator", {})
+            metadata["generator_config"] = run_data.get("generator") or {}
 
             # Initial point configuration
-            metadata["initial_point_actions"] = run_data.get("initial_point_actions", [])
+            metadata["initial_point_actions"] = run_data.get("initial_point_actions") or []
             metadata["relative_to_current"] = run_data.get("relative_to_current", True)
 
             # Variable range settings (filter to only VOCS variables)
-            vrange_limit_options_full = run_data.get("vrange_limit_options", {})
-            vrange_hard_limit_full = run_data.get("vrange_hard_limit", {})
+            vrange_limit_options_full = run_data.get("vrange_limit_options") or {}
+            vrange_hard_limit_full = run_data.get("vrange_hard_limit") or {}
 
             # Get variable names from VOCS
             vocs_variable_names = [list(var.keys())[0] for var in metadata["variables"]]
@@ -696,14 +752,14 @@ class BadgerArchiveDataSource:
             }
 
             # Formulas and observables
-            metadata["observables"] = vocs.get("observables", [])
-            metadata["formulas"] = run_data.get("formulas", {})
-            metadata["observable_formulas"] = run_data.get("observable_formulas", {})
-            metadata["constraint_formulas"] = run_data.get("constraint_formulas", {})
+            metadata["observables"] = vocs.get("observables") or []
+            metadata["formulas"] = run_data.get("formulas") or {}
+            metadata["observable_formulas"] = run_data.get("observable_formulas") or {}
+            metadata["constraint_formulas"] = run_data.get("constraint_formulas") or {}
 
             # Other settings
-            metadata["critical_constraint_names"] = run_data.get("critical_constraint_names", [])
-            metadata["additional_variables"] = run_data.get("additional_variables", [])
+            metadata["critical_constraint_names"] = run_data.get("critical_constraint_names") or []
+            metadata["additional_variables"] = run_data.get("additional_variables") or []
             metadata["badger_version"] = run_data.get("badger_version")
             metadata["xopt_version"] = run_data.get("xopt_version")
 
