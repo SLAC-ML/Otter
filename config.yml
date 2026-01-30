@@ -23,40 +23,69 @@ registry_path: ./src/otter/registry.py
 # Common providers: cborg, openai, anthropic, google, ollama
 # Budget tip: Use anthropic/claude-haiku via cborg for most roles
 
+# models:
+#   orchestrator:
+#     provider: stanford
+#     model_id: claude-3-7-sonnet  # Replaces cborg's anthropic/claude-sonnet
+#   response:
+#     provider: stanford
+#     model_id: gpt-4o  # Replaces cborg's google/gemini-flash
+#     max_tokens: 5000
+#   classifier:
+#     provider: stanford
+#     model_id: gpt-4.omini  # Replaces ollama's mistral:7b
+#   approval:
+#     provider: stanford
+#     model_id: gpt-4.omini  # Replaces ollama's mistral:7b
+#   task_extraction:
+#     provider: stanford
+#     model_id: gpt-4o  # Replaces cborg's google/gemini-flash
+#     max_tokens: 1024
+#   memory:
+#     provider: stanford
+#     model_id: gpt-4o  # Replaces cborg's google/gemini-flash
+#     max_tokens: 256
+#   python_code_generator:
+#     provider: stanford
+#     model_id: claude-3-7-sonnet  # Replaces cborg's anthropic/claude-haiku
+#     max_tokens: 4096
+#   time_parsing:
+#     provider: stanford
+#     model_id: gpt-4.omini  # Replaces ollama's mistral:7b
+#     max_tokens: 512
+#   filter_extraction:
+#     provider: stanford
+#     model_id: gpt-4.omini  # Fast model for extracting run query filters
+#     max_tokens: 1024  # More tokens than time_parsing for complex filter combinations
+
 models:
   orchestrator:
-    provider: stanford
-    model_id: claude-3-7-sonnet  # Replaces cborg's anthropic/claude-sonnet
+    provider: cborg
+    model_id: anthropic/claude-haiku
   response:
-    provider: stanford
-    model_id: gpt-4o  # Replaces cborg's google/gemini-flash
-    max_tokens: 5000
+    provider: cborg
+    model_id: anthropic/claude-haiku
   classifier:
-    provider: stanford
-    model_id: gpt-4.omini  # Replaces ollama's mistral:7b
+    provider: cborg
+    model_id: anthropic/claude-haiku
   approval:
-    provider: stanford
-    model_id: gpt-4.omini  # Replaces ollama's mistral:7b
+    provider: cborg
+    model_id: anthropic/claude-haiku
   task_extraction:
-    provider: stanford
-    model_id: gpt-4o  # Replaces cborg's google/gemini-flash
-    max_tokens: 1024
+    provider: cborg
+    model_id: anthropic/claude-haiku
   memory:
-    provider: stanford
-    model_id: gpt-4o  # Replaces cborg's google/gemini-flash
-    max_tokens: 256
+    provider: cborg
+    model_id: anthropic/claude-haiku
   python_code_generator:
-    provider: stanford
-    model_id: claude-3-7-sonnet  # Replaces cborg's anthropic/claude-haiku
-    max_tokens: 4096
+    provider: cborg
+    model_id: anthropic/claude-haiku
   time_parsing:
-    provider: stanford
-    model_id: gpt-4.omini  # Replaces ollama's mistral:7b
-    max_tokens: 512
+    provider: cborg
+    model_id: anthropic/claude-haiku
   filter_extraction:
-    provider: stanford
-    model_id: gpt-4.omini  # Fast model for extracting run query filters
-    max_tokens: 1024  # More tokens than time_parsing for complex filter combinations
+    provider: cborg
+    model_id: anthropic/claude-haiku
 
 # ============================================================
 # SERVICE CONFIGURATION
@@ -225,7 +254,7 @@ development:
   prompts:
     show_all: false      # Print prompts to console
     print_all: true      # Save prompts to files
-    latest_only: true    # Keep only latest prompt version
+    latest_only: false   # Keep only latest prompt version
 
 # ============================================================
 # LOGGING
@@ -282,10 +311,10 @@ api:
       api_key: ${STANFORD_API_KEY}
       base_url: https://aiapi-prod.stanford.edu/v1
       timeout: 30
-    # cborg:
-    #   api_key: ${CBORG_API_KEY}
-    #   base_url: https://api.cborg.lbl.gov/v1
-    #   timeout: 30
+    cborg:
+      api_key: ${CBORG_API_KEY}
+      base_url: https://api.cborg.lbl.gov/v1
+      timeout: 30
     # openai:
     #   api_key: ${OPENAI_API_KEY}
     #   base_url: https://api.openai.com/v1
